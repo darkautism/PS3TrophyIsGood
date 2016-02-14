@@ -124,24 +124,27 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\BigEndianTool\BigEndianTool\BigEndianTool.csproj">
-      <Project>{a57cee20-8097-467b-9f57-099bb34fbf2b}</Project>
-      <Name>BigEndianTool</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ListViewEx\ListViewEx.csproj">
-      <Project>{35A5C415-0906-4AC7-B0F6-FE3CCA884AD9}</Project>
-      <Name>ListViewEx</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\PS3\TROPHYParser\TROPHYParser\TROPHYParser.csproj">
-      <Project>{81e49c92-d07a-4ad0-8ee0-5c520d4e1c04}</Project>
-      <Name>TROPHYParser</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="orignal.ico" />
     <Content Include="pfdtool\pfdtool.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TROPHYParser\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BigEndianTool\BigEndianTool\BigEndianTool.csproj">
+      <Project>{a57cee20-8097-467b-9f57-099bb34fbf2b}</Project>
+      <Name>BigEndianTool</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ListViewEx\ListViewEx.csproj">
+      <Project>{35a5c415-0906-4ac7-b0f6-fe3cca884ad9}</Project>
+      <Name>ListViewEx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TROPHYParser\TROPHYParser\TROPHYParser.csproj">
+      <Project>{81e49c92-d07a-4ad0-8ee0-5c520d4e1c04}</Project>
+      <Name>TROPHYParser</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
