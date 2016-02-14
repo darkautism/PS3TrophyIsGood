@@ -54,7 +54,7 @@ P.S. 本程式已附pfdtool且會自行加解密，請勿自行解密。每次�
 
 白色表示已經取得，但是尚未同步至PSN的檔案
 
-!(http://4.bp.blogspot.com/-dMj1nom1pKc/USnCAcmDu6I/AAAAAAAADWg/UFiD6o3uguU/s1600/t1.png)
+![DEMO1](http://4.bp.blogspot.com/-dMj1nom1pKc/USnCAcmDu6I/AAAAAAAADWg/UFiD6o3uguU/s1600/t1.png)
 
 綠圈為獎杯名稱，紅圈為取得率
 
@@ -62,7 +62,7 @@ P.S. 本程式已附pfdtool且會自行加解密，請勿自行解密。每次�
 
 最底下是本部落格地址，你可以點擊來查看本部落格最新資訊。
 
-!(http://1.bp.blogspot.com/-wl5TyzveZ3A/USnDCY--SzI/AAAAAAAADW8/UVHzFwXgaTo/s1600/T2.png)
+![DEMO2](http://1.bp.blogspot.com/-wl5TyzveZ3A/USnDCY--SzI/AAAAAAAADW8/UVHzFwXgaTo/s1600/T2.png)
 
 ### 開啟檔案
 
@@ -86,24 +86,24 @@ P.S. 本程式已附pfdtool且會自行加解密，請勿自行解密。每次�
 
 ### Step 4
 
-!(http://2.bp.blogspot.com/-v8NAzSPKSHo/USnB_kbSsbI/AAAAAAAADWM/KKRthffJW2g/s1600/TVCAM%25E8%25A3%259D%25E7%25BD%25AE_20130224_145637.289.jpg)
+![outside](http://2.bp.blogspot.com/-v8NAzSPKSHo/USnB_kbSsbI/AAAAAAAADWM/KKRthffJW2g/s1600/TVCAM%25E8%25A3%259D%25E7%25BD%25AE_20130224_145637.289.jpg)
 
 獎杯變2%了
 
 
 但是實際去看還是鎖著的，我不知道為什麼會有這種現象，假如你將所有獎杯解鎖，他會顯示100%但是點進去仍是全鎖，不過這樣子我們仍可同步至PSN
 
-!(http://4.bp.blogspot.com/-yLq0hQb8b28/USnCAKajXSI/AAAAAAAADWY/8ovaRs6eQZ0/s1600/TVCAM%25E8%25A3%259D%25E7%25BD%25AE_20130224_145652.047.jpg)
+![befor sync](http://4.bp.blogspot.com/-yLq0hQb8b28/USnCAKajXSI/AAAAAAAADWY/8ovaRs6eQZ0/s1600/TVCAM%25E8%25A3%259D%25E7%25BD%25AE_20130224_145652.047.jpg)
 
 ### Step 5
 
 注意，此步驟非常危險，請確定你在做甚麼，且了解後果。被ban我沒辦法還你PSN帳號和consoleid (idps)
 
-!(http://3.bp.blogspot.com/-69ay5OYMsYo/USnB_Xy0ngI/AAAAAAAADWQ/K5YI4SBrAiI/s1600/TVCAM%25E8%25A3%259D%25E7%25BD%25AE_20130224_145646.119.jpg)
+![AFTER SYNC](http://3.bp.blogspot.com/-69ay5OYMsYo/USnB_Xy0ngI/AAAAAAAADWQ/K5YI4SBrAiI/s1600/TVCAM%25E8%25A3%259D%25E7%25BD%25AE_20130224_145646.119.jpg)
 
 
 同步後獎杯就出現了，在這一步我遇到了同步錯誤，但之後就顯示了獎杯。
 
 在vita上面的樣子，真的同步至PSN了。
 
-!(http://3.bp.blogspot.com/-_Gn65OQVVX8/USnB_ZbHaeI/AAAAAAAADWI/xq-PS-BjwFk/s1600/2013-02-24-145001.jpg)
+![VITA](http://3.bp.blogspot.com/-_Gn65OQVVX8/USnB_ZbHaeI/AAAAAAAADWI/xq-PS-BjwFk/s1600/2013-02-24-145001.jpg)
