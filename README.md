@@ -4,6 +4,14 @@ Best ps3 trophy editor ever
 
 ![DEMO](http://4.bp.blogspot.com/-dMj1nom1pKc/USnCAcmDu6I/AAAAAAAADWg/UFiD6o3uguU/s1600/t1.png)
 
+## Build Tutorial
+
+	git clone https://github.com/darkautism/PS3TrophyIsGood.git
+	git submodule init
+	git submodule update --recursive
+
+After that, you can use visual studio to compile this project.
+
 ## 警告
 
 - 同步修改獎杯至PSN是危險的，有被ban的可能
