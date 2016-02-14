@@ -1,0 +1,9 @@
+[submodule "ListViewEx"]
+	path = ListViewEx
+	url = https://github.com/darkautism/ListViewEx
+[submodule "BigEndianTool"]
+	path = BigEndianTool
+	url = https://github.com/darkautism/BigEndianTool
+[submodule "TROPHYParser"]
+	path = TROPHYParser
+	url = https://github.com/darkautism/TROPHYParser
