@@ -57,6 +57,7 @@
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -220,10 +221,12 @@
             this.columnHeader4,
             this.columnHeader5,
             this.columnHeader7,
-            this.columnHeader6});
+            this.columnHeader6,
+            this.columnHeader8});
             resources.ApplyResources(this.listViewEx1, "listViewEx1");
             this.listViewEx1.DoubleClickActivation = false;
             this.listViewEx1.FullRowSelect = true;
+            this.listViewEx1.HideSelection = false;
             this.listViewEx1.LargeImageList = this.imageList1;
             this.listViewEx1.Name = "listViewEx1";
             this.listViewEx1.SmallImageList = this.imageList1;
@@ -260,6 +263,10 @@
             // columnHeader6
             // 
             resources.ApplyResources(this.columnHeader6, "columnHeader6");
+            // 
+            // columnHeader8
+            // 
+            resources.ApplyResources(this.columnHeader8, "columnHeader8");
             // 
             // Form1
             // 
@@ -321,6 +328,7 @@
         private System.Windows.Forms.ToolStripMenuItem setRandomStartTimeToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem setRandomEndTimeToolStripMenuItem;
+        private System.Windows.Forms.ColumnHeader columnHeader8;
     }
 }
 
