@@ -58,6 +58,7 @@
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -129,6 +130,7 @@
             this.進階ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.瞬間白金ToolStripMenuItem,
             this.清除獎杯ToolStripMenuItem,
+            this.toolStripMenuItem1,
             this.toolStripSeparator2,
             this.setRandomStartTimeToolStripMenuItem,
             this.setRandomEndTimeToolStripMenuItem});
@@ -268,6 +270,12 @@
             // 
             resources.ApplyResources(this.columnHeader8, "columnHeader8");
             // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            resources.ApplyResources(this.toolStripMenuItem1, "toolStripMenuItem1");
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
+            // 
             // Form1
             // 
             this.AllowDrop = true;
@@ -329,6 +337,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem setRandomEndTimeToolStripMenuItem;
         private System.Windows.Forms.ColumnHeader columnHeader8;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
     }
 }
 

@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using TROPHYParser;
@@ -15,6 +19,7 @@ namespace PS3TrophyIsGood
         string path;
         DateTimePickForm dtpForm = null;
         DateTimePickForm dtpfForInstant = null;
+        CloneFromForm cloneFrom = null;
         bool haveBeenEdited = false;
 
         DateTime ps3Time = new DateTime(2008,1,1);
@@ -41,6 +46,7 @@ namespace PS3TrophyIsGood
             toolStripComboBox1.SelectedIndexChanged += toolStripComboBox1_SelectedIndexChanged;
             dtpForm = new DateTimePickForm();
             dtpfForInstant = new DateTimePickForm();
+            cloneFrom = new CloneFromForm();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
@@ -338,6 +344,33 @@ namespace PS3TrophyIsGood
             if (dtpfForInstant.ShowDialog() == DialogResult.OK) {
                 randomEndTime = dtpfForInstant.dateTimePicker1.Value;
             }
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            Random rand = new Random((int)DateTime.Now.Ticks);
+            long[] _times = null;
+            if (cloneFrom.ShowDialog() == DialogResult.OK)
+                _times = cloneFrom.cloneFrom(cloneFrom.textBox1.Text).ToArray();
+            try
+            {
+                for (int i = 0; i < tusr.trophyTimeInfoTable.Count; ++i)
+                {
+                 
+                    if (!tpsn[i].HasValue && _times[i] != 0)
+                    {
+                        tusr.UnlockTrophy(i, Utility.TimeStampToDateTime(_times[i]));
+                        tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, Utility.TimeStampToDateTime(_times[i]));
+                    }
+                }
+                haveBeenEdited = true;
+                RefreashCompoment();
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
         }
     }
 }

@@ -47,10 +47,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CloneFromForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CloneFromForm.Designer.cs">
+      <DependentUpon>CloneFromForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="DateTimePickForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="DateTimePickForm.Designer.cs">
+    <Compile Include="DateTimePickForm.designer.cs">
       <DependentUpon>DateTimePickForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Form1.cs">
@@ -72,9 +78,11 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="Utility.cs" />
+    <EmbeddedResource Include="CloneFromForm.resx">
+      <DependentUpon>CloneFromForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="DateTimePickForm.resx">
       <DependentUpon>DateTimePickForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="DateTimePickForm.zh-Hant.resx">
       <DependentUpon>DateTimePickForm.cs</DependentUpon>
