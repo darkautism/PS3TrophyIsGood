@@ -19,7 +19,7 @@ namespace PS3TrophyIsGood
         string path;
         DateTimePickForm dtpForm = null;
         DateTimePickForm dtpfForInstant = null;
-        CloneFromForm cloneFrom = null;
+        CopyFrom copyFrom = null;
         bool haveBeenEdited = false;
 
         DateTime ps3Time = new DateTime(2008,1,1);
@@ -46,11 +46,12 @@ namespace PS3TrophyIsGood
             toolStripComboBox1.SelectedIndexChanged += toolStripComboBox1_SelectedIndexChanged;
             dtpForm = new DateTimePickForm();
             dtpfForInstant = new DateTimePickForm();
-            cloneFrom = new CloneFromForm();
+            copyFrom = new CopyFrom();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
-            System.Diagnostics.Process.Start(linkLabel1.Text.ToString().Substring(14));
+            System.Diagnostics.Process.Start("http://darkautism.blogspot.tw/");
+            System.Diagnostics.Process.Start("https://www.youtube.com/user/TheDarkNachoXD");
         }
 
         private void 關閉ToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -348,27 +349,27 @@ namespace PS3TrophyIsGood
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            Random rand = new Random((int)DateTime.Now.Ticks);
-            long[] _times = null;
-            if (cloneFrom.ShowDialog() == DialogResult.OK)
-                _times = cloneFrom.cloneFrom(cloneFrom.textBox1.Text).ToArray();
-            try
+            if (copyFrom.ShowDialog(this) == DialogResult.OK)
             {
-                for (int i = 0; i < tusr.trophyTimeInfoTable.Count; ++i)
+                long[] _times = copyFrom.checkBox1.Checked ? copyFrom.copyFrom().ToArray() : copyFrom.smartCopy().ToArray();
+                try
                 {
-                 
-                    if (!tpsn[i].HasValue && _times[i] != 0)
+                    for (int i = 0; i < tusr.trophyTimeInfoTable.Count; ++i)
                     {
-                        tusr.UnlockTrophy(i, Utility.TimeStampToDateTime(_times[i]));
-                        tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, Utility.TimeStampToDateTime(_times[i]));
+
+                        if (!tpsn[i].HasValue && _times[i] != 0)
+                        {
+                            tusr.UnlockTrophy(i, Utility.TimeStampToDateTime(_times[i]));
+                            tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, Utility.TimeStampToDateTime(_times[i]));
+                        }
                     }
+                    haveBeenEdited = true;
+                    RefreashCompoment();
                 }
-                haveBeenEdited = true;
-                RefreashCompoment();
-            }
-            catch(Exception ex)
-            {
-                MessageBox.Show(ex.Message);
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
 
         }

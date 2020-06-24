@@ -92,4 +92,9 @@ class Utility
         dateTime = dateTime.AddSeconds(timestamp);
         return dateTime;
     }
+    public static long DateTimeToTimeStamp(DateTime datetime)
+    {
+        DateTime sTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        return (long)(datetime - sTime).TotalSeconds;
+    }
 }

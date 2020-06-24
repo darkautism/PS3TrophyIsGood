@@ -37,6 +37,7 @@
             this.進階ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.瞬間白金ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.清除獎杯ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.setRandomStartTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setRandomEndTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -58,7 +59,6 @@
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -148,6 +148,12 @@
             this.清除獎杯ToolStripMenuItem.Name = "清除獎杯ToolStripMenuItem";
             resources.ApplyResources(this.清除獎杯ToolStripMenuItem, "清除獎杯ToolStripMenuItem");
             this.清除獎杯ToolStripMenuItem.Click += new System.EventHandler(this.清除獎杯ToolStripMenuItem_Click);
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            resources.ApplyResources(this.toolStripMenuItem1, "toolStripMenuItem1");
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
             // toolStripSeparator2
             // 
@@ -269,12 +275,6 @@
             // columnHeader8
             // 
             resources.ApplyResources(this.columnHeader8, "columnHeader8");
-            // 
-            // toolStripMenuItem1
-            // 
-            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            resources.ApplyResources(this.toolStripMenuItem1, "toolStripMenuItem1");
-            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
             // Form1
             // 
