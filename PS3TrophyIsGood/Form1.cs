@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using TROPHYParser;
@@ -27,7 +24,9 @@ namespace PS3TrophyIsGood
         bool isOpen = false;
         int baseGamaCount;
 
-        public Form1() {
+        public Form1() 
+        {
+
             CultureInfo curinfo = null;
             switch (Properties.Settings.Default.Language) { 
                 case 0:
@@ -44,6 +43,10 @@ namespace PS3TrophyIsGood
             toolStripComboBox1.SelectedIndexChanged -= toolStripComboBox1_SelectedIndexChanged;
             toolStripComboBox1.SelectedIndex = Properties.Settings.Default.Language;
             toolStripComboBox1.SelectedIndexChanged += toolStripComboBox1_SelectedIndexChanged;
+            var profiles = new DirectoryInfo("profiles").GetFiles("*.sfo").Select(p => p.Name).ToArray();
+            toolStripComboBox2.Items.Add("Default Profile");
+            toolStripComboBox2.Items.AddRange(profiles);
+            toolStripComboBox2.SelectedIndex = 0;
             dtpForm = new DateTimePickForm();
             dtpfForInstant = new DateTimePickForm();
             copyFrom = new CopyFrom();
@@ -245,7 +248,7 @@ namespace PS3TrophyIsGood
                 tpsn = null;
                 tusr = null;
                 GC.Collect();
-                Utility.encryptTrophy(path);
+                Utility.encryptTrophy(path, toolStripComboBox2.Text);
                 Console.WriteLine(ex.StackTrace);
                 MessageBox.Show("Open Failed:" + ex.Message);
             }
@@ -273,7 +276,7 @@ namespace PS3TrophyIsGood
             重新整理ToolStripMenuItem.Enabled = false;
             進階ToolStripMenuItem.Enabled = false;
             if (isOpen) {
-                Utility.encryptTrophy(path);
+                Utility.encryptTrophy(path,toolStripComboBox2.Text);
                 isOpen = false;
             }
             return true;
@@ -359,8 +362,8 @@ namespace PS3TrophyIsGood
 
                         if (!tpsn[i].HasValue && _times[i] != 0)
                         {
-                            tusr.UnlockTrophy(i, Utility.TimeStampToDateTime(_times[i]));
-                            tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, Utility.TimeStampToDateTime(_times[i]));
+                            tusr.UnlockTrophy(i, _times[i].TimeStampToDateTime());
+                            tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, _times[i].TimeStampToDateTime());
                         }
                     }
                     haveBeenEdited = true;

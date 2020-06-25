@@ -226,7 +226,7 @@
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.CancelButton = this.button2;
-            this.ClientSize = new System.Drawing.Size(336, 88);
+            this.ClientSize = new System.Drawing.Size(336, 248);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.checkBox1);

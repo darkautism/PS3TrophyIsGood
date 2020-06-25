@@ -214,7 +214,7 @@
     <value>246, 22</value>
   </data>
   <data name="toolStripMenuItem1.Text" xml:space="preserve">
-    <value>Clone From</value>
+    <value>Clopy From</value>
   </data>
   <data name="toolStripSeparator2.Size" type="System.Drawing.Size, System.Drawing">
     <value>243, 6</value>
@@ -251,6 +251,9 @@
   </data>
   <data name="重新整理ToolStripMenuItem.Text" xml:space="preserve">
     <value>Refresh(&amp;R)</value>
+  </data>
+  <data name="toolStripComboBox2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>121, 23</value>
   </data>
   <data name="toolStripComboBox1.Items" xml:space="preserve">
     <value>中文</value>
@@ -2836,6 +2839,12 @@
   </data>
   <data name="&gt;&gt;columnHeader8.Type" xml:space="preserve">
     <value>System.Windows.Forms.ColumnHeader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripComboBox2.Name" xml:space="preserve">
+    <value>toolStripComboBox2</value>
+  </data>
+  <data name="&gt;&gt;toolStripComboBox2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>Form1</value>

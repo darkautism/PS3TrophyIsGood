@@ -59,6 +59,7 @@
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.toolStripComboBox2 = new System.Windows.Forms.ToolStripComboBox();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -81,6 +82,7 @@
             this.檔案ToolStripMenuItem,
             this.進階ToolStripMenuItem,
             this.重新整理ToolStripMenuItem,
+            this.toolStripComboBox2,
             this.toolStripComboBox1});
             resources.ApplyResources(this.menuStrip1, "menuStrip1");
             this.menuStrip1.Name = "menuStrip1";
@@ -276,6 +278,11 @@
             // 
             resources.ApplyResources(this.columnHeader8, "columnHeader8");
             // 
+            // toolStripComboBox2
+            // 
+            this.toolStripComboBox2.Name = "toolStripComboBox2";
+            resources.ApplyResources(this.toolStripComboBox2, "toolStripComboBox2");
+            // 
             // Form1
             // 
             this.AllowDrop = true;
@@ -338,6 +345,7 @@
         private System.Windows.Forms.ToolStripMenuItem setRandomEndTimeToolStripMenuItem;
         private System.Windows.Forms.ColumnHeader columnHeader8;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripComboBox toolStripComboBox2;
     }
 }
 

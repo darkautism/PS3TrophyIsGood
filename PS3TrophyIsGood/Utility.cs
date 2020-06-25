@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
 
-class Utility
+public static class Utility
 {
     public static void decryptSave(string gameid, string saveDir)
     {
@@ -54,8 +52,22 @@ class Utility
         proc.WaitForExit();
     }
 
-    public static void encryptTrophy(string saveDir)
+    public static void encryptTrophy(string saveDir, string profile)
     {
+        //resing with other param.sfo
+        if (profile != "Default Profile")
+        {
+            profile = "profiles\\" + profile;
+            var br = new BinaryReader(new FileStream(profile, FileMode.Open));
+            br.BaseStream.Position = 0xC;
+            br.BaseStream.Position = br.ReadInt32();
+            var profileId = br.ReadBytes(0x10);
+            br.Close();
+            var bw = new BinaryWriter(new FileStream(saveDir + "\\PARAM.SFO", FileMode.Open));
+            bw.BaseStream.Position = 0x274;
+            bw.Write(profileId);
+            bw.Close();
+        }
         // update PFD
         System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", " -u \"" + saveDir + "\"");
         procStartInfo.WorkingDirectory = "pfdtool";
@@ -86,13 +98,13 @@ class Utility
 
         return (Math.Abs(longRand % (max - min)) + min);
     }
-    public static DateTime TimeStampToDateTime(long timestamp)
+    public static DateTime TimeStampToDateTime(this long timestamp)
     {
         DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0,DateTimeKind.Utc);
         dateTime = dateTime.AddSeconds(timestamp);
         return dateTime;
     }
-    public static long DateTimeToTimeStamp(DateTime datetime)
+    public static long DateTimeToTimeStamp(this DateTime datetime)
     {
         DateTime sTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         return (long)(datetime - sTime).TotalSeconds;

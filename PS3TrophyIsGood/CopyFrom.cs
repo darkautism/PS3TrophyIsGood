@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
@@ -14,6 +11,9 @@ namespace PS3TrophyIsGood
    
     public partial class CopyFrom : Form
     {
+        /// <summary>
+        /// Class for havian a pair for use it later (you could do it generic as c++ Pair but to lazy
+        /// </summary>
         public class Pair
         {
             public int Id { get; set; }
@@ -31,14 +31,18 @@ namespace PS3TrophyIsGood
             groupBox1.Visible = false;
         }
 
+        /// <summary>
+        /// This get the timestamp from a profile(asuming is a legit one) then modify them to looks like they are legit but not a comple copy
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<long> smartCopy()
         {
             var trophies = copyFrom(textBox1.Text).ToList();
             trophies.Sort((a, b) => a.Date.CompareTo(b.Date));
             var rand = new Random();
-            var delta = Utility.DateTimeToTimeStamp(DateTime.UtcNow.AddYears((int)yearsNumeric.Value)
+            var delta = DateTime.UtcNow.AddYears((int)yearsNumeric.Value)
                 .AddMonths((int)monthNumeric.Value)
-                .AddDays((int)daysNumeric.Value))
+                .AddDays((int)daysNumeric.Value).DateTimeToTimeStamp()
                 + rand.Next((int)minMinutes.Value, (int)maxMinutes.Value);
 
             for (int i = 0; i< trophies.Count-1; ++i)
@@ -54,6 +58,11 @@ namespace PS3TrophyIsGood
 
         public IEnumerable<long> copyFrom() => copyFrom(textBox1.Text).Select(p => p.Date);
 
+        /// <summary>
+        /// Just parse and get the timestamps from a profile from https://psntrophyleaders.com
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
         private IEnumerable<Pair> copyFrom(string url)
         {
             int i = 0;
