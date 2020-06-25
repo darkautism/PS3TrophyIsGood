@@ -354,7 +354,8 @@ namespace PS3TrophyIsGood
         {
             if (copyFrom.ShowDialog(this) == DialogResult.OK)
             {
-                long[] _times = copyFrom.checkBox1.Checked ? copyFrom.copyFrom().ToArray() : copyFrom.smartCopy().ToArray();
+                var _times = copyFrom.checkBox1.Checked ? copyFrom.smartCopy().ToList() : copyFrom.copyFrom().ToList();
+                if(_times.Any()) 清除獎杯ToolStripMenuItem_Click(sender, e); // no idea why but sometimes it get bug and it don't update, so lockin first fix it
                 try
                 {
                     for (int i = 0; i < tusr.trophyTimeInfoTable.Count; ++i)

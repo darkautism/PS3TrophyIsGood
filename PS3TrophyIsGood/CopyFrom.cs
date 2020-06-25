@@ -39,12 +39,9 @@ namespace PS3TrophyIsGood
         {
             var trophies = copyFrom(textBox1.Text).ToList();
             trophies.Sort((a, b) => a.Date.CompareTo(b.Date));
-            var rand = new Random();
-            var delta = DateTime.UtcNow.AddYears((int)yearsNumeric.Value)
-                .AddMonths((int)monthNumeric.Value)
-                .AddDays((int)daysNumeric.Value).DateTimeToTimeStamp()
-                + rand.Next((int)minMinutes.Value, (int)maxMinutes.Value);
-
+            var rand = new Random(); 
+            var time = TimeSpan.FromDays((long)(yearsNumeric.Value * 365+ monthNumeric.Value * 30 + daysNumeric.Value)) + TimeSpan.FromSeconds(rand.Next((int)minMinutes.Value, (int)maxMinutes.Value));
+            var delta = Convert.ToInt64(time.TotalSeconds);
             for (int i = 0; i< trophies.Count-1; ++i)
             {
                 if (trophies[i].Date == 0) continue;
@@ -94,7 +91,7 @@ namespace PS3TrophyIsGood
         private void button1_Click(object sender, EventArgs e)
         {
             if (Regex.IsMatch(textBox1.Text,"https://psntrophyleaders.com/user/view/" + "\\S+/\\S+"))
-                button1.DialogResult = DialogResult.OK;
+                DialogResult = DialogResult.OK;
             else MessageBox.Show("Can't find game");
         }
     }

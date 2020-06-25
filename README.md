@@ -25,6 +25,13 @@ After that, you can use visual studio to compile this project.
 
 ## Change Log：
 
+	v1.3.7
+		- Resign with other param.sfo
+		- Copy timestamp of a user from https://psntrophyleaders.com
+		- Smart copy option
+		- Detects DLC from games
+		- Don't make mandatory the DLC for unlock platinum trophy
+		- Detects if the game has or not a platinum trophy (makes the first trophy able to unlock if it don't has) 
 	V1.3.6
 		-add random setting
 	
