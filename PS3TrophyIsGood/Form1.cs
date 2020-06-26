@@ -43,6 +43,7 @@ namespace PS3TrophyIsGood
             toolStripComboBox1.SelectedIndexChanged -= toolStripComboBox1_SelectedIndexChanged;
             toolStripComboBox1.SelectedIndex = Properties.Settings.Default.Language;
             toolStripComboBox1.SelectedIndexChanged += toolStripComboBox1_SelectedIndexChanged;
+            Directory.CreateDirectory("profiles");
             var profiles = new DirectoryInfo("profiles").GetFiles("*.sfo").Select(p => p.Name).ToArray();
             toolStripComboBox2.Items.Add("Default Profile");
             toolStripComboBox2.Items.AddRange(profiles);
@@ -363,8 +364,9 @@ namespace PS3TrophyIsGood
 
                         if (!tpsn[i].HasValue && _times[i] != 0)
                         {
-                            tusr.UnlockTrophy(i, _times[i].TimeStampToDateTime());
-                            tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, _times[i].TimeStampToDateTime());
+                            var time = _times[i].TimeStampToDateTime();
+                            tusr.UnlockTrophy(i, time);
+                            tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, time);
                         }
                     }
                     haveBeenEdited = true;
