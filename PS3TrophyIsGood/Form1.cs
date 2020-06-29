@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using TROPHYParser;
@@ -15,13 +16,17 @@ namespace PS3TrophyIsGood
         string path;
         DateTimePickForm dtpForm = null;
         DateTimePickForm dtpfForInstant = null;
+        CopyFrom copyFrom = null;
         bool haveBeenEdited = false;
 
         DateTime ps3Time = new DateTime(2008,1,1);
         DateTime randomEndTime = DateTime.Now;
         bool isOpen = false;
+        int baseGamaCount;
 
-        public Form1() {
+        public Form1() 
+        {
+
             CultureInfo curinfo = null;
             switch (Properties.Settings.Default.Language) { 
                 case 0:
@@ -38,12 +43,19 @@ namespace PS3TrophyIsGood
             toolStripComboBox1.SelectedIndexChanged -= toolStripComboBox1_SelectedIndexChanged;
             toolStripComboBox1.SelectedIndex = Properties.Settings.Default.Language;
             toolStripComboBox1.SelectedIndexChanged += toolStripComboBox1_SelectedIndexChanged;
+            Directory.CreateDirectory("profiles");
+            var profiles = new DirectoryInfo("profiles").GetFiles("*.sfo").Select(p => p.Name).ToArray();
+            toolStripComboBox2.Items.Add("Default Profile");
+            toolStripComboBox2.Items.AddRange(profiles);
+            toolStripComboBox2.SelectedIndex = 0;
             dtpForm = new DateTimePickForm();
             dtpfForInstant = new DateTimePickForm();
+            copyFrom = new CopyFrom();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
-            System.Diagnostics.Process.Start(linkLabel1.Text.ToString());
+            System.Diagnostics.Process.Start("http://darkautism.blogspot.tw/");
+            System.Diagnostics.Process.Start("https://www.youtube.com/user/TheDarkNachoXD");
         }
 
         private void 關閉ToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -76,6 +88,13 @@ namespace PS3TrophyIsGood
                     lvi.SubItems.Add(tusr.trophyTimeInfoTable[i].Time.ToString("yyyy/M/dd  HH:mm:ss"));
                     lvi.BackColor = Color.LightGray;
                 }
+                if(tconf[i].gid == 0)
+                {
+                    lvi.SubItems.Add("BaseGame");
+                    baseGamaCount = i;
+                }
+                else lvi.SubItems.Add($"DLC{tconf[i].gid}");
+
 
                 listViewEx1.Items.Add(lvi);
             }
@@ -182,8 +201,8 @@ namespace PS3TrophyIsGood
                     haveBeenEdited = true;
                 }
             } else {  // nonget
-                if (trophyID == 0 && ( tpsn.Count != tusr.all_trophy_number-1 ) ) {
-                    MessageBox.Show(Properties.strings.CantUnloclPlatinumBeforOther);
+                if (trophyID == 0 && tconf.HasPlatinium && ( tpsn.Count < baseGamaCount ) ) {
+                    MessageBox.Show(Properties.strings.CantUnloclPlatinumBeforOther); //if the ammount of unlcoked trophies >= baseGameCount it will also let you unlock platinium
                 } else if (dtpForm.ShowDialog(this) == DialogResult.OK) {
                     tpsn.PutTrophy(trophyID, tusr.trophyTypeTable[trophyID].Type, dtpForm.dateTimePicker1.Value);
                     tusr.UnlockTrophy(trophyID, dtpForm.dateTimePicker1.Value);
@@ -230,7 +249,7 @@ namespace PS3TrophyIsGood
                 tpsn = null;
                 tusr = null;
                 GC.Collect();
-                Utility.encryptTrophy(path);
+                Utility.encryptTrophy(path, toolStripComboBox2.Text);
                 Console.WriteLine(ex.StackTrace);
                 MessageBox.Show("Open Failed:" + ex.Message);
             }
@@ -258,7 +277,7 @@ namespace PS3TrophyIsGood
             重新整理ToolStripMenuItem.Enabled = false;
             進階ToolStripMenuItem.Enabled = false;
             if (isOpen) {
-                Utility.encryptTrophy(path);
+                Utility.encryptTrophy(path,toolStripComboBox2.Text);
                 isOpen = false;
             }
             return true;
@@ -271,19 +290,35 @@ namespace PS3TrophyIsGood
         }
 
         private void 瞬間白金ToolStripMenuItem_Click(object sender, EventArgs e) {
-                Random rand = new Random((int)DateTime.Now.Ticks);
-                for (int i = 1; i < tusr.trophyTimeInfoTable.Count; i++) {
-                    if (!tpsn[i].HasValue) {
-                        tusr.UnlockTrophy(i, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
-                        tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
-                    }
+            Random rand = new Random((int)DateTime.Now.Ticks);
+            int i;
+
+            //Base game
+            for (i = 1; i < tusr.trophyTimeInfoTable.Count && tconf[i].gid == 0; i++) 
+            {
+                if (!tpsn[i].HasValue)
+                {
+                    tusr.UnlockTrophy(i, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
+                    tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                 }
-                if (!tpsn[0].HasValue) {
-                    tusr.UnlockTrophy(0, tpsn.GetLastTrophyTime().AddSeconds(1));
-                    tpsn.PutTrophy(0, tusr.trophyTypeTable[0].Type, tpsn.GetLastTrophyTime().AddSeconds(1));
+            }
+            //Platinium game
+            if (!tpsn[0].HasValue) {
+                tusr.UnlockTrophy(0, tpsn.GetLastTrophyTime().AddSeconds(1));
+                tpsn.PutTrophy(0, tusr.trophyTypeTable[0].Type, tpsn.GetLastTrophyTime().AddSeconds(1));
+            }
+
+            //DLC 
+            for (; i < tusr.trophyTimeInfoTable.Count; i++)
+            {
+                if (!tpsn[i].HasValue)
+                {
+                    tusr.UnlockTrophy(i, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
+                    tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                 }
-                haveBeenEdited = true;
-                RefreashCompoment();
+            }
+            haveBeenEdited = true;
+            RefreashCompoment();
         }
 
         private void 清除獎杯ToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -314,6 +349,35 @@ namespace PS3TrophyIsGood
             if (dtpfForInstant.ShowDialog() == DialogResult.OK) {
                 randomEndTime = dtpfForInstant.dateTimePicker1.Value;
             }
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            if (copyFrom.ShowDialog(this) == DialogResult.OK)
+            {
+                var _times = copyFrom.checkBox1.Checked ? copyFrom.smartCopy().ToList() : copyFrom.copyFrom().ToList();
+                if(_times.Any()) 清除獎杯ToolStripMenuItem_Click(sender, e); // no idea why but sometimes it get bug and it don't update, so lockin first fix it
+                try
+                {
+                    for (int i = 0; i < tusr.trophyTimeInfoTable.Count; ++i)
+                    {
+
+                        if (!tpsn[i].HasValue && _times[i] != 0)
+                        {
+                            var time = _times[i].TimeStampToDateTime();
+                            tusr.UnlockTrophy(i, time);
+                            tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, time);
+                        }
+                    }
+                    haveBeenEdited = true;
+                    RefreashCompoment();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+
         }
     }
 }

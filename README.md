@@ -25,8 +25,26 @@ After that, you can use visual studio to compile this project.
 
 ## Change Log：
 
+	v1.3.7
+	1.  I've added a Resign option, so that you can resign a trophy folder to your specified PARAM.SFO (containing the desired account ID.)
+	    - To use this, you must place your own param.sfo in the directory on your computer, "profiles" with any name (as long as it keeps the extension). For example, you could use "DARKNACHO.SFO"
+	    - Otherwise, if you do not decide to use the feature, the tool will be default to the account id of the provided trophy folder.
+
+	2. You can copy timestamps of a user from https://psntrophyleaders.com/
+	    - This lets you copy all the timestamps from a user's game.
+	3. Smart copy option
+	    - This allows you to add a few parameters to make the copy look more legitimate, and not just copy-and-paste of the user's profile.
+	    - Allows you to add a specific time to bring it to make the times more recent.
+	    - Also adds random delta variable to each trophy to make it different
+	    - Note: This also detects trophies earned in the same interval, so it adds it the same delta.
+
+	3. Detects DLC from games.
+	4. You can unlock the platinum trophy without needing to timestamp any DLC trophies.
+	5. Detects if the game has a platinum trophy or not.
+	    - If the game does not have a platinum trophy, the user can unlock the first trophy without receiving an error message.
+
 	V1.3.6
-		-add random setting
+	-add random setting
 	
 	V1.2.6
 	　-修正一個-8 TimeZone會錯誤的問題

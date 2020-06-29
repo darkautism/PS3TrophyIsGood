@@ -37,10 +37,12 @@
             this.進階ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.瞬間白金ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.清除獎杯ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.setRandomStartTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setRandomEndTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.重新整理ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripComboBox2 = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripComboBox1 = new System.Windows.Forms.ToolStripComboBox();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.dateTimePicker1 = new System.Windows.Forms.DateTimePicker();
@@ -57,6 +59,7 @@
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -79,6 +82,7 @@
             this.檔案ToolStripMenuItem,
             this.進階ToolStripMenuItem,
             this.重新整理ToolStripMenuItem,
+            this.toolStripComboBox2,
             this.toolStripComboBox1});
             resources.ApplyResources(this.menuStrip1, "menuStrip1");
             this.menuStrip1.Name = "menuStrip1";
@@ -128,6 +132,7 @@
             this.進階ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.瞬間白金ToolStripMenuItem,
             this.清除獎杯ToolStripMenuItem,
+            this.toolStripMenuItem1,
             this.toolStripSeparator2,
             this.setRandomStartTimeToolStripMenuItem,
             this.setRandomEndTimeToolStripMenuItem});
@@ -145,6 +150,12 @@
             this.清除獎杯ToolStripMenuItem.Name = "清除獎杯ToolStripMenuItem";
             resources.ApplyResources(this.清除獎杯ToolStripMenuItem, "清除獎杯ToolStripMenuItem");
             this.清除獎杯ToolStripMenuItem.Click += new System.EventHandler(this.清除獎杯ToolStripMenuItem_Click);
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            resources.ApplyResources(this.toolStripMenuItem1, "toolStripMenuItem1");
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
             // toolStripSeparator2
             // 
@@ -168,6 +179,11 @@
             resources.ApplyResources(this.重新整理ToolStripMenuItem, "重新整理ToolStripMenuItem");
             this.重新整理ToolStripMenuItem.Name = "重新整理ToolStripMenuItem";
             this.重新整理ToolStripMenuItem.Click += new System.EventHandler(this.重新整理ToolStripMenuItem_Click);
+            // 
+            // toolStripComboBox2
+            // 
+            this.toolStripComboBox2.Name = "toolStripComboBox2";
+            resources.ApplyResources(this.toolStripComboBox2, "toolStripComboBox2");
             // 
             // toolStripComboBox1
             // 
@@ -220,10 +236,12 @@
             this.columnHeader4,
             this.columnHeader5,
             this.columnHeader7,
-            this.columnHeader6});
+            this.columnHeader6,
+            this.columnHeader8});
             resources.ApplyResources(this.listViewEx1, "listViewEx1");
             this.listViewEx1.DoubleClickActivation = false;
             this.listViewEx1.FullRowSelect = true;
+            this.listViewEx1.HideSelection = false;
             this.listViewEx1.LargeImageList = this.imageList1;
             this.listViewEx1.Name = "listViewEx1";
             this.listViewEx1.SmallImageList = this.imageList1;
@@ -260,6 +278,10 @@
             // columnHeader6
             // 
             resources.ApplyResources(this.columnHeader6, "columnHeader6");
+            // 
+            // columnHeader8
+            // 
+            resources.ApplyResources(this.columnHeader8, "columnHeader8");
             // 
             // Form1
             // 
@@ -321,6 +343,9 @@
         private System.Windows.Forms.ToolStripMenuItem setRandomStartTimeToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem setRandomEndTimeToolStripMenuItem;
+        private System.Windows.Forms.ColumnHeader columnHeader8;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripComboBox toolStripComboBox2;
     }
 }
 

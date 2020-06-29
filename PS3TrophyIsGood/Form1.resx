@@ -127,16 +127,16 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="linkLabel1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 452</value>
+    <value>0, 490</value>
   </data>
   <data name="linkLabel1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>143, 12</value>
+    <value>348, 13</value>
   </data>
   <data name="linkLabel1.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
   </data>
   <data name="linkLabel1.Text" xml:space="preserve">
-    <value>http://darkautism.blogspot.tw/</value>
+    <value>Original from http://darkautism.blogspot.tw/ new features by DarkNacho</value>
   </data>
   <data name="&gt;&gt;linkLabel1.Name" xml:space="preserve">
     <value>linkLabel1</value>
@@ -160,7 +160,7 @@
     <value>17, 17</value>
   </metadata>
   <data name="開啟ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>168, 22</value>
+    <value>160, 22</value>
   </data>
   <data name="開啟ToolStripMenuItem.Text" xml:space="preserve">
     <value>Open(&amp;O)</value>
@@ -169,58 +169,64 @@
     <value>Ctrl+S</value>
   </data>
   <data name="存檔ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>168, 22</value>
+    <value>160, 22</value>
   </data>
   <data name="存檔ToolStripMenuItem.Text" xml:space="preserve">
     <value>Save(&amp;S)</value>
   </data>
   <data name="關閉檔案CToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>168, 22</value>
+    <value>160, 22</value>
   </data>
   <data name="關閉檔案CToolStripMenuItem.Text" xml:space="preserve">
     <value>Close File(&amp;C)</value>
   </data>
   <data name="toolStripSeparator1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>165, 6</value>
+    <value>157, 6</value>
   </data>
   <data name="關閉ToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
     <value>Alt+F4</value>
   </data>
   <data name="關閉ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>168, 22</value>
+    <value>160, 22</value>
   </data>
   <data name="關閉ToolStripMenuItem.Text" xml:space="preserve">
     <value>Close(&amp;X)</value>
   </data>
   <data name="檔案ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>53, 24</value>
+    <value>51, 23</value>
   </data>
   <data name="檔案ToolStripMenuItem.Text" xml:space="preserve">
     <value>File(&amp;F)</value>
   </data>
   <data name="瞬間白金ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>257, 22</value>
+    <value>246, 22</value>
   </data>
   <data name="瞬間白金ToolStripMenuItem.Text" xml:space="preserve">
     <value>Instant Platinum</value>
   </data>
   <data name="清除獎杯ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>257, 22</value>
+    <value>246, 22</value>
   </data>
   <data name="清除獎杯ToolStripMenuItem.Text" xml:space="preserve">
     <value>Clear the unsynchronized trophy</value>
   </data>
+  <data name="toolStripMenuItem1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>246, 22</value>
+  </data>
+  <data name="toolStripMenuItem1.Text" xml:space="preserve">
+    <value>Clopy From</value>
+  </data>
   <data name="toolStripSeparator2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>254, 6</value>
+    <value>243, 6</value>
   </data>
   <data name="setRandomStartTimeToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>257, 22</value>
+    <value>246, 22</value>
   </data>
   <data name="setRandomStartTimeToolStripMenuItem.Text" xml:space="preserve">
     <value>Set random start time</value>
   </data>
   <data name="setRandomEndTimeToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>257, 22</value>
+    <value>246, 22</value>
   </data>
   <data name="setRandomEndTimeToolStripMenuItem.Text" xml:space="preserve">
     <value>Set Random end time</value>
@@ -232,7 +238,7 @@
     <value>False</value>
   </data>
   <data name="進階ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>93, 24</value>
+    <value>88, 23</value>
   </data>
   <data name="進階ToolStripMenuItem.Text" xml:space="preserve">
     <value>Advanced(&amp;A)</value>
@@ -241,10 +247,13 @@
     <value>False</value>
   </data>
   <data name="重新整理ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>78, 24</value>
+    <value>73, 23</value>
   </data>
   <data name="重新整理ToolStripMenuItem.Text" xml:space="preserve">
     <value>Refresh(&amp;R)</value>
+  </data>
+  <data name="toolStripComboBox2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>121, 23</value>
   </data>
   <data name="toolStripComboBox1.Items" xml:space="preserve">
     <value>中文</value>
@@ -253,7 +262,7 @@
     <value>English</value>
   </data>
   <data name="toolStripComboBox1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>121, 24</value>
+    <value>121, 23</value>
   </data>
   <data name="toolStripComboBox1.Text" xml:space="preserve">
     <value>English</value>
@@ -262,7 +271,7 @@
     <value>0, 0</value>
   </data>
   <data name="menuStrip1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>887, 28</value>
+    <value>918, 27</value>
   </data>
   <data name="menuStrip1.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -289,13 +298,13 @@
     <value>yyyy/M/dd  HH:mm:ss</value>
   </data>
   <data name="dateTimePicker1.Font" type="System.Drawing.Font, System.Drawing">
-    <value>新細明體, 9pt</value>
+    <value>Microsoft Sans Serif, 9pt</value>
   </data>
   <data name="dateTimePicker1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>661, 31</value>
+    <value>661, 34</value>
   </data>
   <data name="dateTimePicker1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>200, 22</value>
+    <value>160, 21</value>
   </data>
   <data name="dateTimePicker1.TabIndex" type="System.Int32, mscorlib">
     <value>3</value>
@@ -322,10 +331,10 @@
     <value>True</value>
   </data>
   <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>479, 6</value>
+    <value>510, 7</value>
   </data>
   <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>93, 12</value>
+    <value>91, 13</value>
   </data>
   <data name="label1.TabIndex" type="System.Int32, mscorlib">
     <value>4</value>
@@ -352,10 +361,10 @@
     <value>Top, Right</value>
   </data>
   <data name="progressBar1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>741, 0</value>
+    <value>772, 0</value>
   </data>
   <data name="progressBar1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>146, 24</value>
+    <value>146, 26</value>
   </data>
   <data name="progressBar1.TabIndex" type="System.Int32, mscorlib">
     <value>5</value>
@@ -379,10 +388,10 @@
     <value>True</value>
   </data>
   <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>578, 6</value>
+    <value>609, 7</value>
   </data>
   <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>32, 12</value>
+    <value>36, 13</value>
   </data>
   <data name="label2.TabIndex" type="System.Int32, mscorlib">
     <value>6</value>
@@ -409,10 +418,10 @@
     <value>True</value>
   </data>
   <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>623, 6</value>
+    <value>654, 7</value>
   </data>
   <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>50, 12</value>
+    <value>53, 13</value>
   </data>
   <data name="label3.TabIndex" type="System.Int32, mscorlib">
     <value>7</value>
@@ -439,10 +448,10 @@
     <value>True</value>
   </data>
   <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>676, 6</value>
+    <value>707, 7</value>
   </data>
   <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>44, 12</value>
+    <value>48, 13</value>
   </data>
   <data name="label4.TabIndex" type="System.Int32, mscorlib">
     <value>8</value>
@@ -493,16 +502,22 @@
     <value>Obtainment Time</value>
   </data>
   <data name="columnHeader6.Width" type="System.Int32, mscorlib">
-    <value>203</value>
+    <value>160</value>
+  </data>
+  <data name="columnHeader8.Text" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="columnHeader8.Width" type="System.Int32, mscorlib">
+    <value>80</value>
   </data>
   <data name="listViewEx1.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
     <value>Fill</value>
   </data>
   <data name="listViewEx1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 28</value>
+    <value>0, 27</value>
   </data>
   <data name="listViewEx1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>887, 424</value>
+    <value>918, 463</value>
   </data>
   <data name="listViewEx1.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
@@ -511,7 +526,7 @@
     <value>listViewEx1</value>
   </data>
   <data name="&gt;&gt;listViewEx1.Type" xml:space="preserve">
-    <value>ListViewEx.ListViewEx, ListViewEx, Version=1.0.4807.1576, Culture=neutral, PublicKeyToken=null</value>
+    <value>ListViewEx.ListViewEx, ListViewEx, Version=1.0.7433.31327, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;listViewEx1.Parent" xml:space="preserve">
     <value>$this</value>
@@ -526,10 +541,10 @@
     <value>50</value>
   </metadata>
   <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
-    <value>6, 12</value>
+    <value>6, 13</value>
   </data>
   <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
-    <value>887, 464</value>
+    <value>918, 503</value>
   </data>
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
@@ -2735,6 +2750,12 @@
   <data name="&gt;&gt;清除獎杯ToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="&gt;&gt;toolStripMenuItem1.Name" xml:space="preserve">
+    <value>toolStripMenuItem1</value>
+  </data>
+  <data name="&gt;&gt;toolStripMenuItem1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="&gt;&gt;toolStripSeparator2.Name" xml:space="preserve">
     <value>toolStripSeparator2</value>
   </data>
@@ -2758,6 +2779,12 @@
   </data>
   <data name="&gt;&gt;重新整理ToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripComboBox2.Name" xml:space="preserve">
+    <value>toolStripComboBox2</value>
+  </data>
+  <data name="&gt;&gt;toolStripComboBox2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;toolStripComboBox1.Name" xml:space="preserve">
     <value>toolStripComboBox1</value>
@@ -2811,6 +2838,12 @@
     <value>columnHeader6</value>
   </data>
   <data name="&gt;&gt;columnHeader6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ColumnHeader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;columnHeader8.Name" xml:space="preserve">
+    <value>columnHeader8</value>
+  </data>
+  <data name="&gt;&gt;columnHeader8.Type" xml:space="preserve">
     <value>System.Windows.Forms.ColumnHeader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
