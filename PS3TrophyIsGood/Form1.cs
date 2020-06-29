@@ -54,7 +54,7 @@ namespace PS3TrophyIsGood
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
-            System.Diagnostics.Process.Start("http://darkautism.blogspot.tw/");
+            System.Diagnostics.Process.Start("https://github.com/darkautism/PS3TrophyIsGood");
             System.Diagnostics.Process.Start("https://www.youtube.com/user/TheDarkNachoXD");
         }
 
