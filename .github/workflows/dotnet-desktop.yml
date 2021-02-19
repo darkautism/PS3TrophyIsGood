@@ -76,6 +76,12 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
 
     - name: Build the application
-      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
+      run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
+
+    - name: Upload files
+      uses: actions/upload-artifact@v2
+      with:
+        name: PS3TrophyIsGood
+        path: PS3TrophyIsGood/bin/Release
