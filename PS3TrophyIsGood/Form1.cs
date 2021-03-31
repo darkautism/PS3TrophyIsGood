@@ -79,14 +79,21 @@ namespace PS3TrophyIsGood
                 lvi.SubItems.Add(tconf[i].detail);
                 lvi.SubItems.Add(tconf[i].ttype);
                 lvi.SubItems.Add(tconf[i].hidden);
-                lvi.SubItems.Add((tpsn[i].HasValue) ? Properties.strings.yes : Properties.strings.no);
-                lvi.SubItems.Add((tpsn[i].HasValue && tpsn[i].Value.IsSync) ? Properties.strings.yes : Properties.strings.no);
                 if (tpsn[i].HasValue) {
+                    lvi.SubItems.Add(Properties.strings.yes);
+                    lvi.SubItems.Add(tpsn[i].Value.IsSync ? Properties.strings.yes : Properties.strings.no);
                     lvi.SubItems.Add(tpsn[i].Value.Time.ToString("yyyy/M/dd  HH:mm:ss"));
-                    if (tpsn[i].Value.IsSync) lvi.BackColor = Color.LightPink;
+                    lvi.BackColor = (tpsn[i].Value.IsSync ? Color.LightPink : lvi.BackColor = Color.LightGray);
                 } else {
+                    lvi.SubItems.Add(tusr.trophyTimeInfoTable[i].IsGet ? Properties.strings.yes : Properties.strings.no);
+                    lvi.SubItems.Add(tusr.trophyTimeInfoTable[i].IsSync ? Properties.strings.yes : Properties.strings.no);
                     lvi.SubItems.Add(tusr.trophyTimeInfoTable[i].Time.ToString("yyyy/M/dd  HH:mm:ss"));
-                    lvi.BackColor = Color.LightGray;
+                    if (tusr.trophyTimeInfoTable[i].IsSync)
+                        lvi.BackColor = Color.LightPink;
+                    else if (tusr.trophyTimeInfoTable[i].IsGet)
+                        lvi.BackColor = Color.LightGray;
+                    else
+                        lvi.BackColor = Color.White;
                 }
                 if(tconf[i].gid == 0)
                 {
@@ -94,7 +101,6 @@ namespace PS3TrophyIsGood
                     baseGamaCount = i;
                 }
                 else lvi.SubItems.Add($"DLC{tconf[i].gid}");
-
 
                 listViewEx1.Items.Add(lvi);
             }
@@ -144,9 +150,15 @@ namespace PS3TrophyIsGood
             this.Text = Application.ProductName + "-[" + tconf.title_name + "]";
         }
 
+        private bool isTrophySync(int trophyID)
+        {
+            return (tpsn[trophyID].HasValue && tpsn[trophyID].Value.IsSync) || tusr.trophyTimeInfoTable[trophyID].IsSync;
+        }
+
         private void listViewEx1_SubItemClicked(object sender, ListViewEx.SubItemEventArgs e) {
             int trophyID = e.Item.ImageIndex;// 在這裡imageid其實等於trophy ID   ex 白金0號, 1...
-            if (e.SubItem == 6 && tpsn[trophyID].HasValue && !tpsn[trophyID].Value.IsSync) { // 已經取得且尚未同步的才可編輯
+            if (e.SubItem == 6 && !isTrophySync(trophyID))
+            {
                 listViewEx1.StartEditing(dateTimePicker1, e.Item, e.SubItem);
             }
         }
@@ -185,7 +197,7 @@ namespace PS3TrophyIsGood
         private void listViewEx1_DoubleClick(object sender, EventArgs e) {
             int trophyID = ((ListView)sender).SelectedItems[0].ImageIndex;// 在這裡imageid其實等於trophy ID   ex 白金0號, 1...
             ListViewItem lvi = ((ListView)sender).SelectedItems[0];
-            if (tpsn[trophyID].HasValue && tpsn[trophyID].Value.IsSync) { // 尚未同步的才可編輯
+            if (isTrophySync(trophyID)) { // 尚未同步的才可編輯
                 MessageBox.Show(Properties.strings.SyncedTrophyCanNotEdit);
             } else if (tpsn[trophyID].HasValue) { // 已經取得的獎杯，刪除之
                 if (trophyID != 0 && (tpsn.Count == tusr.all_trophy_number )) {
