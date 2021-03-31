@@ -12,6 +12,12 @@ Best ps3 trophy editor ever
 
 After that, you can use visual studio to compile this project.
 
+## Download
+
+[CI auto build](https://github.com/darkautism/PS3TrophyIsGood/actions)
+
+![Download link](https://user-images.githubusercontent.com/3898040/108462066-e8c87e00-72b6-11eb-80e1-1447c9cc2c2a.png)
+
 ## 警告
 
 - 同步修改獎杯至PSN是危險的，有被ban的可能
