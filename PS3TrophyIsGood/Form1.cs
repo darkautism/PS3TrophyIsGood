@@ -347,11 +347,13 @@ namespace PS3TrophyIsGood
                 }
             }
 
-            Utility.DeleteDirectory(pathTemp);
             tpsn = null;
             tusr = null;
             tconf = null;
             EmptyAllCompoment();
+            //Utility.DeleteDirectory(pathTemp);
+            path = string.Empty;
+            pathTemp = string.Empty;
             haveBeenEdited = false;
             重新整理ToolStripMenuItem.Enabled = false;
             進階ToolStripMenuItem.Enabled = false;
