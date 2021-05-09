@@ -119,29 +119,32 @@ namespace PS3TrophyIsGood
             label4.Text = "000/000";
         }
 
-        private void CompletionRates() {
+        private void CompletionRates()
+        {
             int totalGrade = 0, getGrade = 0, isGetTrophyNumber = 0;
-            for (int i = 0; i < tconf.Count; i++) {
-                switch (tusr.trophyTypeTable[i].Type) {
-                    case 1:
-                        totalGrade += 180;
-                        getGrade += (tpsn[i].HasValue) ? 180 : 0;
+            for (int i = 0; i < tconf.Count; i++)
+            {
+                switch ((TropType)tusr.trophyTypeTable[i].Type)
+                {
+                    case TropType.Platinum:
+                        totalGrade += (int)TropGrade.Platinum;
+                        getGrade += isTrophySync(i) ? (int)TropGrade.Platinum : 0;
                         break;
-                    case 2:
-                        totalGrade += 90;
-                        getGrade += (tpsn[i].HasValue) ? 90 : 0;
+                    case TropType.Gold:
+                        totalGrade += (int)TropGrade.Gold;
+                        getGrade += isTrophySync(i) ? (int)TropGrade.Gold : 0;
                         break;
-                    case 3:
-                        totalGrade += 30;
-                        getGrade += (tpsn[i].HasValue) ? 30 : 0;
+                    case TropType.Silver:
+                        totalGrade += (int)TropGrade.Silver;
+                        getGrade += isTrophySync(i) ? (int)TropGrade.Silver : 0;
                         break;
-                    case 4:
-                        totalGrade += 15;
-                        getGrade += (tpsn[i].HasValue) ? 15 : 0;
+                    case TropType.Bronze:
+                        totalGrade += (int)TropGrade.Bronze;
+                        getGrade += isTrophySync(i) ? (int)TropGrade.Bronze : 0;
                         break;
                 }
 
-                if (tpsn[i].HasValue) isGetTrophyNumber++;
+                if (isTrophySync(i)) isGetTrophyNumber++;
             }
             progressBar1.Maximum = totalGrade;
             progressBar1.Value = getGrade;
