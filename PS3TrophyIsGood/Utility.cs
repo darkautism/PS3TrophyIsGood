@@ -109,4 +109,58 @@ public static class Utility
         DateTime sTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         return (long)(datetime - sTime).TotalSeconds;
     }
+
+    public static string GetTemporaryDirectory()
+    {
+        string tempDirectory;
+        do
+        {
+            tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        } while (Directory.Exists(tempDirectory));
+        Directory.CreateDirectory(tempDirectory);
+        return tempDirectory;
+    }
+
+    public static string CopyTrophyDirToTemp(string trophyDir)
+    {
+        DirectoryInfo dir = new DirectoryInfo(trophyDir);
+        string pathTemp = Path.Combine(GetTemporaryDirectory(), dir.Name);
+        DirectoryCopy(trophyDir, pathTemp, true);
+        return pathTemp;
+    }
+
+    public static void DirectoryCopy(string source, string target, bool overwrite)
+    {
+        DirectoryInfo dir = new DirectoryInfo(source);
+        if (!dir.Exists)
+        {
+            throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + source);
+        }
+
+        // If the destination directory doesn't exist, create it.
+        Directory.CreateDirectory(target);
+
+        // Get the files in the directory and copy them to the new location.
+        FileInfo[] files = dir.GetFiles();
+        foreach (FileInfo file in files)
+        {
+            string tempPath = Path.Combine(target, file.Name);
+            file.CopyTo(tempPath, overwrite);
+        }
+
+        DirectoryInfo[] dirs = dir.GetDirectories();
+        foreach (DirectoryInfo subdir in dirs)
+        {
+            string tempPath = Path.Combine(target, subdir.Name);
+            DirectoryCopy(subdir.FullName, tempPath, overwrite);
+        }
+    }
+
+    public static void DeleteDirectory(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            Directory.Delete(path, true);
+        }
+    }
 }
