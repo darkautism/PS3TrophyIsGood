@@ -82,7 +82,7 @@ namespace PS3TrophyIsGood
             listViewEx1.BeginUpdate();
             for (int i = 0; i < tconf.Count; i++)
             {
-                listViewEx1.LargeImageList.Images.Add("", Image.FromFile(pathTemp + @"\TROP" + string.Format("{0:000}", tconf[i].id) + ".PNG"));
+                listViewEx1.LargeImageList.Images.Add("", Image.FromFile(path + @"\TROP" + string.Format("{0:000}", tconf[i].id) + ".PNG"));
                 ListViewItem lvi = new ListViewItem();
                 lvi.ImageIndex = i; // 在這裡imageid其實等於trophy ID   ex 白金0號, 1...
                 lvi.Text = tconf[i].name;
@@ -351,7 +351,7 @@ namespace PS3TrophyIsGood
             tusr = null;
             tconf = null;
             EmptyAllCompoment();
-            //Utility.DeleteDirectory(pathTemp);
+            Utility.DeleteDirectory(new DirectoryInfo(pathTemp).Parent.FullName);
             path = string.Empty;
             pathTemp = string.Empty;
             haveBeenEdited = false;
