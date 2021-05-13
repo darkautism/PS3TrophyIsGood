@@ -50,6 +50,14 @@ public static class Utility
         proc.StartInfo = procStartInfo;
         proc.Start();
         proc.WaitForExit();
+        string message = proc.StandardOutput.ReadToEnd();
+        if (proc.ExitCode != 0)
+        {
+            throw new Exception("An error ocurred on decrypt trophies. Please check if Microsoft Visual C++ is installed. You can download it at: http://www.microsoft.com/download/en/details.aspx?id=5555");
+        } else if (message != "pfdtool 0.2.3 (c) 2012 by flatz\r\n\r\n")
+        {
+            throw new Exception(message);
+        }
     }
 
     public static void encryptTrophy(string saveDir, string profile)
