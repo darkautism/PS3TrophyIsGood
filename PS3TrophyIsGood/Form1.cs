@@ -351,7 +351,7 @@ namespace PS3TrophyIsGood
             tusr = null;
             tconf = null;
             EmptyAllCompoment();
-            if (pathTemp != string.Empty)
+            if (!string.IsNullOrEmpty(pathTemp))
             {
                 Utility.DeleteDirectory(new DirectoryInfo(pathTemp).Parent.FullName);
             }
