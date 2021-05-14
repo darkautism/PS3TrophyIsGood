@@ -317,9 +317,9 @@ namespace PS3TrophyIsGood
                 string encPathTemp = Utility.GetTemporaryDirectory();
                 try
                 {
-                    Utility.DirectoryCopy(pathTemp, encPathTemp, false);
+                    Utility.CopyTrophyData(pathTemp, encPathTemp, false);
                     Utility.encryptTrophy(encPathTemp, toolStripComboBox2.Text);
-                    Utility.DirectoryCopy(encPathTemp, path, true);
+                    Utility.CopyTrophyData(encPathTemp, path, true);
                 }
                 finally
                 {
