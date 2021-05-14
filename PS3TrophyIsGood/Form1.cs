@@ -270,7 +270,6 @@ namespace PS3TrophyIsGood
         private void 存檔ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SaveFile();
-            RefreashCompoment();
         }
 
         private void 關閉檔案CToolStripMenuItem_Click(object sender, EventArgs e)
@@ -326,6 +325,7 @@ namespace PS3TrophyIsGood
                 {
                     Utility.DeleteDirectory(encPathTemp);
                 }
+                RefreashCompoment();
             }
         }
 
@@ -351,7 +351,10 @@ namespace PS3TrophyIsGood
             tusr = null;
             tconf = null;
             EmptyAllCompoment();
-            Utility.DeleteDirectory(new DirectoryInfo(pathTemp).Parent.FullName);
+            if (!string.IsNullOrEmpty(pathTemp))
+            {
+                Utility.DeleteDirectory(new DirectoryInfo(pathTemp).Parent.FullName);
+            }
             path = string.Empty;
             pathTemp = string.Empty;
             haveBeenEdited = false;
