@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -172,6 +173,25 @@ namespace PS3TrophyIsGood
             return (tpsn[trophyID].HasValue && tpsn[trophyID].Value.IsSync) || tusr.trophyTimeInfoTable[trophyID].IsSync;
         }
 
+        private bool isTrophyGet(int trophyID)
+        {
+            return tpsn[trophyID].HasValue || tusr.trophyTimeInfoTable[trophyID].IsGet;
+        }
+
+        private int getCountBaseTrophiesGot()
+        {
+            int countBaseTrophiesGot = 0;
+            //for (int i = 0; i < tconf.Count; i++)
+            for (int i = 0; i < tconf.trophys.Count; i++)
+            {
+                if (tconf[i].gid == 0 && isTrophyGet(i))
+                {
+                    countBaseTrophiesGot++;
+                }
+            }
+            return countBaseTrophiesGot;
+        }
+
         private void listViewEx1_SubItemClicked(object sender, ListViewEx.SubItemEventArgs e)
         {
             int trophyID = e.Item.ImageIndex;// 在這裡imageid其實等於trophy ID   ex 白金0號, 1...
@@ -231,7 +251,7 @@ namespace PS3TrophyIsGood
             }
             else if (tpsn[trophyID].HasValue)
             { // 已經取得的獎杯，刪除之
-                if (trophyID != 0 && (tpsn.Count == tusr.all_trophy_number))
+                if (trophyID != 0 && tconf[trophyID].gid == 0 && isTrophyGet(0))
                 {
                     MessageBox.Show(Properties.strings.CantLoclPlatinumBeforOther);
                 }
@@ -249,9 +269,9 @@ namespace PS3TrophyIsGood
             }
             else
             {  // nonget
-                if (trophyID == 0 && tconf.HasPlatinium && (tpsn.Count < baseGamaCount))
+                if (trophyID == 0 && tconf.HasPlatinium && (getCountBaseTrophiesGot() < baseGamaCount))
                 {
-                    MessageBox.Show(Properties.strings.CantUnloclPlatinumBeforOther); //if the ammount of unlcoked trophies >= baseGameCount it will also let you unlock platinium
+                    MessageBox.Show(Properties.strings.CantUnloclPlatinumBeforOther);
                 }
                 else if (dtpForm.ShowDialog(this) == DialogResult.OK)
                 {
@@ -260,7 +280,6 @@ namespace PS3TrophyIsGood
                     lvi.SubItems[4].Text = Properties.strings.yes;
                     lvi.BackColor = ((ListView)sender).BackColor;
                     lvi.SubItems[6].Text = dtpForm.dateTimePicker1.Value.ToString(dtpForm.dateTimePicker1.CustomFormat);
-                    tusr.UnlockTrophy(trophyID, dtpForm.dateTimePicker1.Value);
                     CompletionRates();
                     haveBeenEdited = true;
                 }
