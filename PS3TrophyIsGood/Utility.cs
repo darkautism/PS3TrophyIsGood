@@ -1,8 +1,11 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 public static class Utility
 {
+
+    private static string[] TROPHY_FILES_EXTENSION = { ".PFD", ".SFO", ".DAT", ".SFM" };
     public static void decryptSave(string gameid, string saveDir)
     {
         // update PFD
@@ -133,11 +136,11 @@ public static class Utility
     {
         DirectoryInfo dir = new DirectoryInfo(trophyDir);
         string pathTemp = Path.Combine(GetTemporaryDirectory(), dir.Name);
-        DirectoryCopy(trophyDir, pathTemp, true);
+        CopyTrophyData(trophyDir, pathTemp, true);
         return pathTemp;
     }
 
-    public static void DirectoryCopy(string source, string target, bool overwrite)
+    public static void CopyTrophyData(string source, string target, bool overwrite)
     {
         DirectoryInfo dir = new DirectoryInfo(source);
         if (!dir.Exists)
@@ -152,15 +155,11 @@ public static class Utility
         FileInfo[] files = dir.GetFiles();
         foreach (FileInfo file in files)
         {
-            string tempPath = Path.Combine(target, file.Name);
-            file.CopyTo(tempPath, overwrite);
-        }
-
-        DirectoryInfo[] dirs = dir.GetDirectories();
-        foreach (DirectoryInfo subdir in dirs)
-        {
-            string tempPath = Path.Combine(target, subdir.Name);
-            DirectoryCopy(subdir.FullName, tempPath, overwrite);
+            if (TROPHY_FILES_EXTENSION.Contains(file.Extension.ToUpper()))
+            {
+                string tempPath = Path.Combine(target, file.Name);
+                file.CopyTo(tempPath, overwrite);
+            }
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -172,6 +173,24 @@ namespace PS3TrophyIsGood
             return (tpsn[trophyID].HasValue && tpsn[trophyID].Value.IsSync) || tusr.trophyTimeInfoTable[trophyID].IsSync;
         }
 
+        private bool isTrophyGet(int trophyID)
+        {
+            return tpsn[trophyID].HasValue || tusr.trophyTimeInfoTable[trophyID].IsGet;
+        }
+
+        private int getCountBaseTrophiesGot()
+        {
+            int countBaseTrophiesGot = 0;
+            for (int i = 0; i < tconf.trophys.Count; i++)
+            {
+                if (tconf[i].gid == 0 && isTrophyGet(i))
+                {
+                    countBaseTrophiesGot++;
+                }
+            }
+            return countBaseTrophiesGot;
+        }
+
         private void listViewEx1_SubItemClicked(object sender, ListViewEx.SubItemEventArgs e)
         {
             int trophyID = e.Item.ImageIndex;// 在這裡imageid其實等於trophy ID   ex 白金0號, 1...
@@ -231,7 +250,7 @@ namespace PS3TrophyIsGood
             }
             else if (tpsn[trophyID].HasValue)
             { // 已經取得的獎杯，刪除之
-                if (trophyID != 0 && (tpsn.Count == tusr.all_trophy_number))
+                if (trophyID != 0 && tconf[trophyID].gid == 0 && isTrophyGet(0))
                 {
                     MessageBox.Show(Properties.strings.CantLoclPlatinumBeforOther);
                 }
@@ -240,27 +259,25 @@ namespace PS3TrophyIsGood
                     tpsn.DeleteTrophyByID(trophyID);
                     tusr.LockTrophy(trophyID);
                     lvi.SubItems[4].Text = Properties.strings.no;
-                    lvi.BackColor = Color.LightGray;
+                    lvi.BackColor = Color.White;
                     lvi.SubItems[6].Text = new DateTime(0).ToString(dtpForm.dateTimePicker1.CustomFormat);
-                    tusr.LockTrophy(trophyID);
                     CompletionRates();
                     haveBeenEdited = true;
                 }
             }
             else
             {  // nonget
-                if (trophyID == 0 && tconf.HasPlatinium && (tpsn.Count < baseGamaCount))
+                if (trophyID == 0 && tconf.HasPlatinium && (getCountBaseTrophiesGot() < baseGamaCount))
                 {
-                    MessageBox.Show(Properties.strings.CantUnloclPlatinumBeforOther); //if the ammount of unlcoked trophies >= baseGameCount it will also let you unlock platinium
+                    MessageBox.Show(Properties.strings.CantUnloclPlatinumBeforOther);
                 }
                 else if (dtpForm.ShowDialog(this) == DialogResult.OK)
                 {
                     tpsn.PutTrophy(trophyID, tusr.trophyTypeTable[trophyID].Type, dtpForm.dateTimePicker1.Value);
                     tusr.UnlockTrophy(trophyID, dtpForm.dateTimePicker1.Value);
                     lvi.SubItems[4].Text = Properties.strings.yes;
-                    lvi.BackColor = ((ListView)sender).BackColor;
+                    lvi.BackColor = Color.LightGray;
                     lvi.SubItems[6].Text = dtpForm.dateTimePicker1.Value.ToString(dtpForm.dateTimePicker1.CustomFormat);
-                    tusr.UnlockTrophy(trophyID, dtpForm.dateTimePicker1.Value);
                     CompletionRates();
                     haveBeenEdited = true;
                 }
@@ -317,9 +334,9 @@ namespace PS3TrophyIsGood
                 string encPathTemp = Utility.GetTemporaryDirectory();
                 try
                 {
-                    Utility.DirectoryCopy(pathTemp, encPathTemp, false);
+                    Utility.CopyTrophyData(pathTemp, encPathTemp, false);
                     Utility.encryptTrophy(encPathTemp, toolStripComboBox2.Text);
-                    Utility.DirectoryCopy(encPathTemp, path, true);
+                    Utility.CopyTrophyData(encPathTemp, path, true);
                 }
                 finally
                 {
@@ -380,14 +397,14 @@ namespace PS3TrophyIsGood
             //Base game
             for (i = 1; i < tusr.trophyTimeInfoTable.Count && tconf[i].gid == 0; i++)
             {
-                if (!tpsn[i].HasValue)
+                if (!(isTrophySync(i) || tusr.trophyTimeInfoTable[i].IsGet))
                 {
                     tusr.UnlockTrophy(i, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                     tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                 }
             }
             //Platinium game
-            if (!tpsn[0].HasValue)
+            if (!(isTrophySync(0) || tusr.trophyTimeInfoTable[0].IsGet))
             {
                 tusr.UnlockTrophy(0, tpsn.GetLastTrophyTime().AddSeconds(1));
                 tpsn.PutTrophy(0, tusr.trophyTypeTable[0].Type, tpsn.GetLastTrophyTime().AddSeconds(1));
@@ -396,7 +413,7 @@ namespace PS3TrophyIsGood
             //DLC 
             for (; i < tusr.trophyTimeInfoTable.Count; i++)
             {
-                if (!tpsn[i].HasValue)
+                if (!(isTrophySync(i) || tusr.trophyTimeInfoTable[i].IsGet))
                 {
                     tusr.UnlockTrophy(i, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                     tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
