@@ -181,7 +181,6 @@ namespace PS3TrophyIsGood
         private int getCountBaseTrophiesGot()
         {
             int countBaseTrophiesGot = 0;
-            //for (int i = 0; i < tconf.Count; i++)
             for (int i = 0; i < tconf.trophys.Count; i++)
             {
                 if (tconf[i].gid == 0 && isTrophyGet(i))
@@ -260,9 +259,8 @@ namespace PS3TrophyIsGood
                     tpsn.DeleteTrophyByID(trophyID);
                     tusr.LockTrophy(trophyID);
                     lvi.SubItems[4].Text = Properties.strings.no;
-                    lvi.BackColor = Color.LightGray;
+                    lvi.BackColor = Color.White;
                     lvi.SubItems[6].Text = new DateTime(0).ToString(dtpForm.dateTimePicker1.CustomFormat);
-                    tusr.LockTrophy(trophyID);
                     CompletionRates();
                     haveBeenEdited = true;
                 }
@@ -278,7 +276,7 @@ namespace PS3TrophyIsGood
                     tpsn.PutTrophy(trophyID, tusr.trophyTypeTable[trophyID].Type, dtpForm.dateTimePicker1.Value);
                     tusr.UnlockTrophy(trophyID, dtpForm.dateTimePicker1.Value);
                     lvi.SubItems[4].Text = Properties.strings.yes;
-                    lvi.BackColor = ((ListView)sender).BackColor;
+                    lvi.BackColor = Color.LightGray;
                     lvi.SubItems[6].Text = dtpForm.dateTimePicker1.Value.ToString(dtpForm.dateTimePicker1.CustomFormat);
                     CompletionRates();
                     haveBeenEdited = true;
