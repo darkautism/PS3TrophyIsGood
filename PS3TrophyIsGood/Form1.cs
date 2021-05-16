@@ -535,14 +535,14 @@ namespace PS3TrophyIsGood
             //Base game
             for (i = 1; i < tusr.trophyTimeInfoTable.Count && tconf[i].gid == 0; i++)
             {
-                if (!(IsTrophySync(i) || tusr.trophyTimeInfoTable[i].IsGet))
+                if (!IsTrophyGot(i))
                 {
                     tusr.UnlockTrophy(i, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                     tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                 }
             }
             //Platinium game
-            if (!(IsTrophySync(0) || tusr.trophyTimeInfoTable[0].IsGet))
+            if (!IsTrophyGot(0))
             {
                 tusr.UnlockTrophy(0, LastTrophyTime().AddSeconds(1));
                 tpsn.PutTrophy(0, tusr.trophyTypeTable[0].Type, LastTrophyTime().AddSeconds(1));
@@ -551,7 +551,7 @@ namespace PS3TrophyIsGood
             //DLC 
             for (; i < tusr.trophyTimeInfoTable.Count; i++)
             {
-                if (!(IsTrophySync(i) || tusr.trophyTimeInfoTable[i].IsGet))
+                if (!IsTrophyGot(i))
                 {
                     tusr.UnlockTrophy(i, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
                     tpsn.PutTrophy(i, tusr.trophyTypeTable[i].Type, new DateTime(Utility.LongRandom(ps3Time.Ticks, randomEndTime.Ticks, rand)));
