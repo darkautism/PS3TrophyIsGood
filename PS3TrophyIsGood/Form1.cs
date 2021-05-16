@@ -25,7 +25,7 @@ namespace PS3TrophyIsGood
         bool haveBeenEdited = false;
 
         DateTime ps3Time = new DateTime(MINIMUM_POSSIBLE_DATE);
-        DateTime lastTrophyTime = new DateTime(MINIMUM_POSSIBLE_DATE);
+        DateTime lastSyncTrophyTime = new DateTime(MINIMUM_POSSIBLE_DATE);
         DateTime randomEndTime = DateTime.Now;
 
         bool isOpen = false;
@@ -82,9 +82,9 @@ namespace PS3TrophyIsGood
 
         private bool ValidateSelectedDate(DateTime selectedDate)
         {
-            if (DateTime.Compare(lastTrophyTime, selectedDate) > 0)
+            if (DateTime.Compare(lastSyncTrophyTime, selectedDate) > 0)
             {
-                MessageBox.Show(string.Format("The last trophy synchronized with PSN has the following date: {0:dd/MM/yyyy HH:mm:ss}. Select a date greater than this.", lastTrophyTime));
+                MessageBox.Show(string.Format("The last trophy synchronized with PSN has the following date: {0:dd/MM/yyyy HH:mm:ss}. Select a date greater than this.", lastSyncTrophyTime));
                 return false;
             }
             return true;
@@ -409,15 +409,6 @@ namespace PS3TrophyIsGood
             CloseFile();
         }
 
-        private DateTime LastSyncTrophyTime()
-        {
-            if (DateTime.Compare(tpsn.LastSyncTime, tusr.LastSyncTime) > 0)
-            {
-                return tpsn.LastSyncTime;
-            }
-            return tusr.LastSyncTime;
-        }
-
         private DateTime LastTrophyTime()
         {
             if (DateTime.Compare(tpsn.LastTrophyTime, tusr.LastTrophyTime) > 0)
@@ -442,9 +433,13 @@ namespace PS3TrophyIsGood
                 tpsn = new TROPTRNS(pathTemp);
                 tusr = new TROPUSR(pathTemp);
 
-                ps3Time = LastSyncTrophyTime();
-                dtpForm = new DateTimePickForm(lastTrophyTime);
-                dtpfForInstant = new DateTimePickForm(lastTrophyTime);
+                lastSyncTrophyTime = tusr.LastSyncTime;
+                if (DateTime.Compare(tpsn.LastSyncTime, tusr.LastSyncTime) > 0)
+                    lastSyncTrophyTime = tpsn.LastSyncTime;
+
+                ps3Time = lastSyncTrophyTime;
+                dtpForm = new DateTimePickForm(ps3Time);
+                dtpfForInstant = new DateTimePickForm(ps3Time);
 
                 RefreshComponents();
                 isOpen = true;
