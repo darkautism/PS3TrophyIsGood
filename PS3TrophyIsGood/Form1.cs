@@ -309,17 +309,17 @@ namespace PS3TrophyIsGood
             int trophyID = e.Item.ImageIndex;// 在這裡imageid其實等於trophy ID   ex 白金0號, 1...
             if (e.SubItem == 6 && !IsTrophySync(trophyID))
             {
-                DateTime trophyTime;
-                if (tpsn[trophyID].HasValue)
+                DateTime trophyTime = DateTime.Now;
+                if (IsTrophyGot(trophyID))
                 {
-                    trophyTime = tpsn[trophyID].Value.Time;
-                } else
-                {
-                    trophyTime = tusr.trophyTimeInfoTable[trophyID].Time;
-                }
-                if (DateTime.Compare(ps3Time, trophyTime) > 0)
-                {
-                    trophyTime = ps3Time;
+                    if (tpsn[trophyID].HasValue)
+                    {
+                        trophyTime = tpsn[trophyID].Value.Time;
+                    }
+                    else
+                    {
+                        trophyTime = tusr.trophyTimeInfoTable[trophyID].Time;
+                    }
                 }
                 txtDateTimeTmp = e.Item.SubItems[e.SubItem].Text;
                 e.Item.SubItems[e.SubItem].Text = trophyTime.ToString("yyyy/M/dd  HH:mm:ss");
