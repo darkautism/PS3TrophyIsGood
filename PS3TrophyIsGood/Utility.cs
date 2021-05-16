@@ -69,15 +69,18 @@ public static class Utility
         if (profile != "Default Profile")
         {
             profile = "profiles\\" + profile;
-            var br = new BinaryReader(new FileStream(profile, FileMode.Open));
-            br.BaseStream.Position = 0xC;
-            br.BaseStream.Position = br.ReadInt32();
-            var profileId = br.ReadBytes(0x10);
-            br.Close();
-            var bw = new BinaryWriter(new FileStream(saveDir + "\\PARAM.SFO", FileMode.Open));
-            bw.BaseStream.Position = 0x274;
-            bw.Write(profileId);
-            bw.Close();
+            byte[] profileId;
+            using (var br = new BinaryReader(new FileStream(profile, FileMode.Open)))
+            {
+                br.BaseStream.Position = 0xC;
+                br.BaseStream.Position = br.ReadInt32();
+                profileId = br.ReadBytes(0x10);
+            }
+            using (var bw = new BinaryWriter(new FileStream(saveDir + "\\PARAM.SFO", FileMode.Open)))
+            {
+                bw.BaseStream.Position = 0x274;
+                bw.Write(profileId);
+            }
         }
         // update PFD
         System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", " -u \"" + saveDir + "\"");
