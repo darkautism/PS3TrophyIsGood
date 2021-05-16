@@ -86,6 +86,7 @@
             this.toolStripComboBox1});
             resources.ApplyResources(this.menuStrip1, "menuStrip1");
             this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Click += new System.EventHandler(this.menuStrip1_Click);
             // 
             // 檔案ToolStripMenuItem
             // 

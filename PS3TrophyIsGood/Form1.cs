@@ -466,6 +466,8 @@ namespace PS3TrophyIsGood
         {
             if (isOpen)
             {
+                if (listViewEx1.IsEditing)
+                    listViewEx1.EndEditing(true);
                 tpsn.Save();
                 tusr.Save();
                 haveBeenEdited = false;
@@ -486,6 +488,8 @@ namespace PS3TrophyIsGood
 
         public bool CloseFile()
         {
+            if (listViewEx1.IsEditing)
+                listViewEx1.EndEditing(true);
             if (haveBeenEdited)
             {
                 DialogResult dr = MessageBox.Show(Properties.strings.CloseConfirm, Properties.strings.Close, MessageBoxButtons.YesNoCancel);
@@ -625,6 +629,12 @@ namespace PS3TrophyIsGood
                 }
             }
 
+        }
+
+        private void menuStrip1_Click(object sender, EventArgs e)
+        {
+            if (listViewEx1.IsEditing)
+                listViewEx1.EndEditing(true);
         }
     }
 }
