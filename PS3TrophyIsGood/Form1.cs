@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -84,7 +83,7 @@ namespace PS3TrophyIsGood
         {
             if (DateTime.Compare(lastSyncTrophyTime, selectedDate) > 0)
             {
-                MessageBox.Show(string.Format("The last trophy synchronized with PSN has the following date: {0:dd/MM/yyyy HH:mm:ss}. Select a date greater than this.", lastSyncTrophyTime));
+                MessageBox.Show(string.Format(Properties.strings.PsnSyncTime, lastSyncTrophyTime));
                 return false;
             }
             return true;
@@ -453,7 +452,7 @@ namespace PS3TrophyIsGood
                 tusr = null;
                 GC.Collect();
                 Console.WriteLine(ex.StackTrace);
-                MessageBox.Show("Open Failed:" + ex.Message);
+                MessageBox.Show(ex.Message);
             }
         }
 

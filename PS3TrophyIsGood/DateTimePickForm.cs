@@ -18,7 +18,7 @@ namespace PS3TrophyIsGood {
         {
             if (DateTime.Compare(ps3Time, dateTimePicker1.Value) > 0)
             {
-                MessageBox.Show(string.Format("The last trophy synchronized with PSN has the following date: {0:dd/MM/yyyy HH:mm:ss}. Select a date greater than this.", ps3Time));
+                MessageBox.Show(string.Format(Properties.strings.PsnSyncTime, ps3Time));
                 return;
             }
             DialogResult = DialogResult.OK;

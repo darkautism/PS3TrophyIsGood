@@ -90,9 +90,11 @@ namespace PS3TrophyIsGood
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (Regex.IsMatch(textBox1.Text,"https://psntrophyleaders.com/user/view/" + "\\S+/\\S+"))
+            if (minMinutes.Value > maxMinutes.Value)
+                MessageBox.Show(Properties.strings.MinCantBeGreaterThanMax);
+            else if (Regex.IsMatch(textBox1.Text,"https://psntrophyleaders.com/user/view/" + "\\S+/\\S+"))
                 DialogResult = DialogResult.OK;
-            else MessageBox.Show("Can't find game");
+            else MessageBox.Show(Properties.strings.CantFindGame);
         }
     }
 }
