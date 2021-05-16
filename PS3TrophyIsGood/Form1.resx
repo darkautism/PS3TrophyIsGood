@@ -159,11 +159,14 @@
   <metadata name="menuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
+  <data name="開啟ToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
+    <value>Ctrl+O</value>
+  </data>
   <data name="開啟ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>165, 22</value>
   </data>
   <data name="開啟ToolStripMenuItem.Text" xml:space="preserve">
-    <value>Open(&amp;O)</value>
+    <value>&amp;Open</value>
   </data>
   <data name="存檔ToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
     <value>Ctrl+S</value>
@@ -172,13 +175,16 @@
     <value>165, 22</value>
   </data>
   <data name="存檔ToolStripMenuItem.Text" xml:space="preserve">
-    <value>Save(&amp;S)</value>
+    <value>&amp;Save</value>
+  </data>
+  <data name="關閉檔案CToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
+    <value>Ctrl+W</value>
   </data>
   <data name="關閉檔案CToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>165, 22</value>
   </data>
   <data name="關閉檔案CToolStripMenuItem.Text" xml:space="preserve">
-    <value>Close File(&amp;C)</value>
+    <value>&amp;Close File</value>
   </data>
   <data name="toolStripSeparator1.Size" type="System.Drawing.Size, System.Drawing">
     <value>162, 6</value>
@@ -190,13 +196,13 @@
     <value>165, 22</value>
   </data>
   <data name="關閉ToolStripMenuItem.Text" xml:space="preserve">
-    <value>Close(&amp;X)</value>
+    <value>E&amp;xit</value>
   </data>
   <data name="檔案ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>52, 23</value>
   </data>
   <data name="檔案ToolStripMenuItem.Text" xml:space="preserve">
-    <value>File(&amp;F)</value>
+    <value>&amp;File</value>
   </data>
   <data name="瞬間白金ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>255, 22</value>
@@ -241,7 +247,7 @@
     <value>92, 23</value>
   </data>
   <data name="進階ToolStripMenuItem.Text" xml:space="preserve">
-    <value>Advanced(&amp;A)</value>
+    <value>&amp;Advanced</value>
   </data>
   <data name="重新整理ToolStripMenuItem.Enabled" type="System.Boolean, mscorlib">
     <value>False</value>
@@ -250,7 +256,7 @@
     <value>77, 23</value>
   </data>
   <data name="重新整理ToolStripMenuItem.Text" xml:space="preserve">
-    <value>Refresh(&amp;R)</value>
+    <value>&amp;Refresh</value>
   </data>
   <data name="toolStripComboBox2.Size" type="System.Drawing.Size, System.Drawing">
     <value>121, 23</value>
