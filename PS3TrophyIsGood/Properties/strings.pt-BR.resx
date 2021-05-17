@@ -117,147 +117,58 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="&gt;&gt;dateTimePicker1.ZOrder" xml:space="preserve">
-    <value>4</value>
+  <data name="Close" xml:space="preserve">
+    <value>Fechar</value>
   </data>
-  <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="button2.TabIndex" type="System.Int32, mscorlib">
-    <value>2</value>
+  <data name="CloseConfirm" xml:space="preserve">
+    <value>Deseja salvar o arquivo?</value>
   </data>
-  <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="dateTimePicker1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 30</value>
+  <data name="Danger" xml:space="preserve">
+    <value>Perigo</value>
   </data>
-  <data name="Title.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
+  <data name="DangerConfirm" xml:space="preserve">
+    <value>Instant Platinum's time will be the same, is easily identify by the PSN, we recommend manually modify time, even so do you wish to continue?</value>
   </data>
-  <data name="&gt;&gt;button2.ZOrder" xml:space="preserve">
-    <value>2</value>
+  <data name="Delete" xml:space="preserve">
+    <value>Apagar troféu</value>
   </data>
-  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
-    <value>6, 13</value>
+  <data name="DeleteTrophyConfirm" xml:space="preserve">
+    <value>O troféu será apagado, deseja continuar?</value>
   </data>
-  <data name="&gt;&gt;Title.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="no" xml:space="preserve">
+    <value>não</value>
   </data>
-  <data name="button3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 25</value>
+  <data name="SyncedTrophyCanNotEdit" xml:space="preserve">
+    <value>Este troféu já está sincronizado. Não é possível modificá-lo.</value>
   </data>
-  <data name="dateTimePicker1.CustomFormat" xml:space="preserve">
-    <value>yyyy/M/dd HH:mm:ss</value>
+  <data name="yes" xml:space="preserve">
+    <value>sim</value>
   </data>
-  <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Form, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="CantLoclPlatinumBeforOther" xml:space="preserve">
+    <value>Não é possível bloquear outros troféus enquanto o de Platina está bloqueado.</value>
   </data>
-  <data name="&gt;&gt;button2.Name" xml:space="preserve">
-    <value>button2</value>
+  <data name="CantUnloclPlatinumBeforOther" xml:space="preserve">
+    <value>Não é possível desbloquear o troféu de Platina enquanto os outros estiverem bloqueados.</value>
   </data>
-  <data name="&gt;&gt;dateTimePicker1.Name" xml:space="preserve">
-    <value>dateTimePicker1</value>
+  <data name="RestartProgram" xml:space="preserve">
+    <value>Por favor reinicie o programa para aplicar as configurações.</value>
   </data>
-  <data name="&gt;&gt;button1.Parent" xml:space="preserve">
-    <value>$this</value>
+  <data name="RandomStartTime" xml:space="preserve">
+    <value>RandomStartTime</value>
   </data>
-  <data name="dateTimePicker1.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
+  <data name="RandomEndTime" xml:space="preserve">
+    <value>RandomEndTime</value>
   </data>
-  <data name="&gt;&gt;dateTimePicker1.Parent" xml:space="preserve">
-    <value>$this</value>
+  <data name="CantFindGame" xml:space="preserve">
+    <value>Não foi possível encontrar o jogo.</value>
   </data>
-  <data name="button2.Text" xml:space="preserve">
-    <value>Cancel</value>
+  <data name="MinCantBeGreaterThanMax" xml:space="preserve">
+    <value>"Minimum minutes" can't be greater than "Maximum minutes".</value>
   </data>
-  <data name="Title.TabIndex" type="System.Int32, mscorlib">
-    <value>3</value>
+  <data name="PsnSyncTime" xml:space="preserve">
+    <value>O último troféu sincronizado com a PSN tem a seguinte data: {0}. Selecione uma data maior que essa.</value>
   </data>
-  <data name="&gt;&gt;dateTimePicker1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.DateTimePicker, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="DateFormatString" xml:space="preserve">
+    <value>dd/MM/yyyy HH:mm:ss</value>
   </data>
-  <data name="button3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 61</value>
-  </data>
-  <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
-    <value>259, 96</value>
-  </data>
-  <data name="&gt;&gt;Title.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;button3.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="button1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 25</value>
-  </data>
-  <data name="button3.Text" xml:space="preserve">
-    <value>Random</value>
-  </data>
-  <data name="&gt;&gt;Title.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;button3.Name" xml:space="preserve">
-    <value>button3</value>
-  </data>
-  <data name="&gt;&gt;button3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;$this.Name" xml:space="preserve">
-    <value>DateTimePickForm</value>
-  </data>
-  <data name="&gt;&gt;button2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="button2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 25</value>
-  </data>
-  <data name="Title.Text" xml:space="preserve">
-    <value>Set the Time for Trophy Obtainment</value>
-  </data>
-  <data name="&gt;&gt;button1.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="dateTimePicker1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>200, 20</value>
-  </data>
-  <data name="&gt;&gt;button3.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;Title.Name" xml:space="preserve">
-    <value>Title</value>
-  </data>
-  <data name="button3.TabIndex" type="System.Int32, mscorlib">
-    <value>4</value>
-  </data>
-  <data name="Title.Size" type="System.Drawing.Size, System.Drawing">
-    <value>175, 13</value>
-  </data>
-  <data name="button1.TabIndex" type="System.Int32, mscorlib">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;button1.Name" xml:space="preserve">
-    <value>button1</value>
-  </data>
-  <data name="&gt;&gt;button1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="button1.Text" xml:space="preserve">
-    <value>Confirm</value>
-  </data>
-  <data name="button1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>93, 61</value>
-  </data>
-  <data name="$this.Text" xml:space="preserve">
-    <value>Unlock Trophy</value>
-  </data>
-  <data name="button2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>173, 61</value>
-  </data>
-  <data name="Title.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 14</value>
-  </data>
-  <data name="&gt;&gt;button2.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>True</value>
-  </metadata>
 </root>

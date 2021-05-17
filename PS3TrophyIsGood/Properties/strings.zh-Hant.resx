@@ -153,4 +153,22 @@
   <data name="RestartProgram" xml:space="preserve">
     <value>重新啟動以完成設定。</value>
   </data>
+  <data name="CantFindGame" xml:space="preserve">
+    <value>找不到遊戲。</value>
+  </data>
+  <data name="MinCantBeGreaterThanMax" xml:space="preserve">
+    <value>“最小分鐘數”不能大於“最大分鐘數”。</value>
+  </data>
+  <data name="PsnSyncTime" xml:space="preserve">
+    <value>與PSN同步的最後一個獎杯的日期如下：{0}。 選擇一個大於此日期的日期。</value>
+  </data>
+  <data name="RandomEndTime" xml:space="preserve">
+    <value>RandomEndTime</value>
+  </data>
+  <data name="RandomStartTime" xml:space="preserve">
+    <value>RandomStartTime</value>
+  </data>
+  <data name="DateFormatString" xml:space="preserve">
+    <value>yyyy/M/dd  HH:mm:ss</value>
+  </data>
 </root>
