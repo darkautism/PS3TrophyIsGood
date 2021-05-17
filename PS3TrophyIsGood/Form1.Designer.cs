@@ -275,6 +275,7 @@
             // 
             // columnHeader7
             // 
+            this.columnHeader7.Tag = "Sincronizado";
             resources.ApplyResources(this.columnHeader7, "columnHeader7");
             // 
             // columnHeader6
