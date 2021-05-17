@@ -171,4 +171,7 @@
   <data name="DateFormatString" xml:space="preserve">
     <value>yyyy/M/dd  HH:mm:ss</value>
   </data>
+  <data name="FileNotFoundMsg" xml:space="preserve">
+    <value>找不到“ {0}”。 請選擇一個有效的獎杯文件夾。</value>
+  </data>
 </root>

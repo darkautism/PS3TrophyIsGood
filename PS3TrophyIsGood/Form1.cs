@@ -450,6 +450,14 @@ namespace PS3TrophyIsGood
                 重新整理ToolStripMenuItem.Enabled = true;
                 進階ToolStripMenuItem.Enabled = true;
             }
+            catch (FileNotFoundException ex)
+            {
+                tconf = null;
+                tpsn = null;
+                tusr = null;
+                GC.Collect();
+                MessageBox.Show(string.Format(Properties.strings.FileNotFoundMsg, Path.GetFileName(ex.FileName)));
+            }
             catch (Exception ex)
             {
                 tconf = null;
