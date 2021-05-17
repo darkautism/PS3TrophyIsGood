@@ -124,6 +124,15 @@ namespace PS3TrophyIsGood.Properties {
         }
         
         /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a M/d/yyyy h:mm:ss tt.
+        /// </summary>
+        internal static string DateFormatString {
+            get {
+                return ResourceManager.GetString("DateFormatString", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查詢類似 Delete Trophy 的當地語系化字串。
         /// </summary>
         internal static string Delete {
@@ -160,7 +169,7 @@ namespace PS3TrophyIsGood.Properties {
         }
         
         /// <summary>
-        ///   Consulta uma cadeia de caracteres localizada semelhante a The last trophy synchronized with PSN has the following date: {0:dd/MM/yyyy HH:mm:ss}. Select a date greater than this..
+        ///   Consulta uma cadeia de caracteres localizada semelhante a The last trophy synchronized with PSN has the following date: {0}. Select a date greater than this..
         /// </summary>
         internal static string PsnSyncTime {
             get {

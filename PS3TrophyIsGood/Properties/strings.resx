@@ -166,6 +166,9 @@
     <value>"Minimum minutes" can't be greater than "Maximum minutes".</value>
   </data>
   <data name="PsnSyncTime" xml:space="preserve">
-    <value>The last trophy synchronized with PSN has the following date: {0:dd/MM/yyyy HH:mm:ss}. Select a date greater than this.</value>
+    <value>The last trophy synchronized with PSN has the following date: {0}. Select a date greater than this.</value>
+  </data>
+  <data name="DateFormatString" xml:space="preserve">
+    <value>yyyy/M/dd  HH:mm:ss</value>
   </data>
 </root>
