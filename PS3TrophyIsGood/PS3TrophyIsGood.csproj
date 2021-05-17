@@ -83,8 +83,14 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="Utility.cs" />
+    <EmbeddedResource Include="CopyFrom.pt-BR.resx">
+      <DependentUpon>CopyFrom.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="CopyFrom.resx">
       <DependentUpon>CopyFrom.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DateTimePickForm.pt-BR.resx">
+      <DependentUpon>DateTimePickForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="DateTimePickForm.resx">
       <DependentUpon>DateTimePickForm.cs</DependentUpon>
