@@ -171,4 +171,7 @@
   <data name="DateFormatString" xml:space="preserve">
     <value>yyyy/M/dd  HH:mm:ss</value>
   </data>
+  <data name="FileNotFoundMsg" xml:space="preserve">
+    <value>"{0}" was not found. Please, select a valid trophy folder.</value>
+  </data>
 </root>

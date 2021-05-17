@@ -171,4 +171,7 @@
   <data name="DateFormatString" xml:space="preserve">
     <value>dd/MM/yyyy HH:mm:ss</value>
   </data>
+  <data name="FileNotFoundMsg" xml:space="preserve">
+    <value>O arquivo "{0}" não foi encontrado. Selecione uma pasta de troféus válida.</value>
+  </data>
 </root>

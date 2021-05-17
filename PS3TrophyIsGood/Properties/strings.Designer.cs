@@ -151,6 +151,15 @@ namespace PS3TrophyIsGood.Properties {
         }
         
         /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a &quot;{0}&quot; was not found. Please, select a valid trophy folder..
+        /// </summary>
+        internal static string FileNotFoundMsg {
+            get {
+                return ResourceManager.GetString("FileNotFoundMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Consulta uma cadeia de caracteres localizada semelhante a &quot;Minimum minutes&quot; can&apos;t be greater than &quot;Maximum minutes&quot;..
         /// </summary>
         internal static string MinCantBeGreaterThanMax {
