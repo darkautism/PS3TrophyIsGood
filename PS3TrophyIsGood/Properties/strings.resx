@@ -169,6 +169,6 @@
     <value>The last trophy synchronized with PSN has the following date: {0}. Select a date greater than this.</value>
   </data>
   <data name="DateFormatString" xml:space="preserve">
-    <value>M/d/yyyy h:mm:ss tt</value>
+    <value>M/d/yyyy HH:mm:ss</value>
   </data>
 </root>
