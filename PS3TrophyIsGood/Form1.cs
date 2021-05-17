@@ -199,7 +199,7 @@ namespace PS3TrophyIsGood
                 lvi.Text = tconf[i].name;
                 lvi.SubItems.Add(tconf[i].detail);
                 lvi.SubItems.Add(tconf[i].ttype);
-                lvi.SubItems.Add(tconf[i].hidden);
+                lvi.SubItems.Add(tconf[i].hidden == "yes" ? Properties.strings.yes : Properties.strings.no);
                 if (tpsn[i].HasValue)
                 {
                     lvi.SubItems.Add(Properties.strings.yes);
