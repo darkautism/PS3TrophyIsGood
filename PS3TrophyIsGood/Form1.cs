@@ -40,6 +40,10 @@ namespace PS3TrophyIsGood
                 case 0:
                     curinfo = new CultureInfo("zh-TW");
                     break;
+                case 2:
+                    curinfo = new CultureInfo("pt-BR");
+                    break;
+                case 1:
                 default:
                     curinfo = CultureInfo.CreateSpecificCulture("en");
                     break;
@@ -56,6 +60,7 @@ namespace PS3TrophyIsGood
             toolStripComboBox2.Items.Add("Default Profile");
             toolStripComboBox2.Items.AddRange(profiles);
             toolStripComboBox2.SelectedIndex = 0;
+            dateTimePicker1.CustomFormat = Properties.strings.DateFormatString;
             copyFrom = new CopyFrom();
         }
 
@@ -83,7 +88,7 @@ namespace PS3TrophyIsGood
         {
             if (DateTime.Compare(lastSyncTrophyTime, selectedDate) > 0)
             {
-                MessageBox.Show(string.Format(Properties.strings.PsnSyncTime, lastSyncTrophyTime));
+                MessageBox.Show(string.Format(Properties.strings.PsnSyncTime, lastSyncTrophyTime.ToString(Properties.strings.DateFormatString)));
                 return false;
             }
             return true;
@@ -130,7 +135,7 @@ namespace PS3TrophyIsGood
                         tusr.UnlockTrophy(trophyId, trophyTime);
                         lvi.SubItems[4].Text = Properties.strings.yes;
                         lvi.BackColor = Color.White;
-                        lvi.SubItems[6].Text = trophyTime.ToString(dtpForm.dateTimePicker1.CustomFormat);
+                        lvi.SubItems[6].Text = trophyTime.ToString(Properties.strings.DateFormatString);
                         CompletionRates();
                         haveBeenEdited = true;
                         return true;
@@ -165,7 +170,7 @@ namespace PS3TrophyIsGood
                         TROPUSR.TrophyTimeInfo tti = tusr.trophyTimeInfoTable[trophyId];
                         tti.Time = trophyTime;
                         tusr.trophyTimeInfoTable[trophyId] = tti;
-                        lvi.SubItems[6].Text = trophyTime.ToString(dtpForm.dateTimePicker1.CustomFormat);
+                        lvi.SubItems[6].Text = trophyTime.ToString(Properties.strings.DateFormatString);
                         haveBeenEdited = true;
                         return true;
                     }
@@ -199,7 +204,7 @@ namespace PS3TrophyIsGood
                 {
                     lvi.SubItems.Add(Properties.strings.yes);
                     lvi.SubItems.Add(tpsn[i].Value.IsSync ? Properties.strings.yes : Properties.strings.no);
-                    lvi.SubItems.Add(tpsn[i].Value.Time.ToString("yyyy/M/dd  HH:mm:ss"));
+                    lvi.SubItems.Add(tpsn[i].Value.Time.ToString(Properties.strings.DateFormatString));
                     lvi.BackColor = (tpsn[i].Value.IsSync ? Color.LightPink : lvi.BackColor = Color.White);
                 }
                 else
@@ -210,7 +215,7 @@ namespace PS3TrophyIsGood
                     var tropTimeTxt = string.Empty;
                     if (tusr.trophyTimeInfoTable[i].Time.Ticks > 0)
                     {
-                        tropTimeTxt = tusr.trophyTimeInfoTable[i].Time.ToString("yyyy/M/dd  HH:mm:ss");
+                        tropTimeTxt = tusr.trophyTimeInfoTable[i].Time.ToString(Properties.strings.DateFormatString);
                     }
                     lvi.SubItems.Add(tropTimeTxt);
 
@@ -321,7 +326,7 @@ namespace PS3TrophyIsGood
                     }
                 }
                 txtDateTimeTmp = e.Item.SubItems[e.SubItem].Text;
-                e.Item.SubItems[e.SubItem].Text = trophyTime.ToString("yyyy/M/dd  HH:mm:ss");
+                e.Item.SubItems[e.SubItem].Text = trophyTime.ToString(Properties.strings.DateFormatString);
                 listViewEx1.StartEditing(dateTimePicker1, e.Item, e.SubItem);
             }
         }

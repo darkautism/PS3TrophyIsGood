@@ -267,6 +267,9 @@
   <data name="toolStripComboBox1.Items1" xml:space="preserve">
     <value>English</value>
   </data>
+  <data name="toolStripComboBox1.Items2" xml:space="preserve">
+    <value>Português-BR</value>
+  </data>
   <data name="toolStripComboBox1.Size" type="System.Drawing.Size, System.Drawing">
     <value>121, 23</value>
   </data>

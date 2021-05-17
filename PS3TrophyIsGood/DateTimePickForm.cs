@@ -4,8 +4,9 @@ using System.Windows.Forms;
 namespace PS3TrophyIsGood {
     public partial class DateTimePickForm : Form {
         public DateTimePickForm(DateTime lastSyncTime) {
-            ps3Time = lastSyncTime;
             InitializeComponent();
+            ps3Time = lastSyncTime;
+            dateTimePicker1.CustomFormat = Properties.strings.DateFormatString;
         }
 
         private Random rand = new Random((int)DateTime.Now.Ticks);

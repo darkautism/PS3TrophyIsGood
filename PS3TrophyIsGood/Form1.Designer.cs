@@ -190,7 +190,8 @@
             // 
             this.toolStripComboBox1.Items.AddRange(new object[] {
             resources.GetString("toolStripComboBox1.Items"),
-            resources.GetString("toolStripComboBox1.Items1")});
+            resources.GetString("toolStripComboBox1.Items1"),
+            resources.GetString("toolStripComboBox1.Items2")});
             this.toolStripComboBox1.Name = "toolStripComboBox1";
             resources.ApplyResources(this.toolStripComboBox1, "toolStripComboBox1");
             this.toolStripComboBox1.SelectedIndexChanged += new System.EventHandler(this.toolStripComboBox1_SelectedIndexChanged);
