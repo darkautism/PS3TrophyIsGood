@@ -163,10 +163,10 @@
     <value>與PSN同步的最後一個獎杯的日期如下：{0}。 選擇一個大於此日期的日期。</value>
   </data>
   <data name="RandomEndTime" xml:space="preserve">
-    <value>RandomEndTime</value>
+    <value>隨機結束時間</value>
   </data>
   <data name="RandomStartTime" xml:space="preserve">
-    <value>RandomStartTime</value>
+    <value>隨機開始時間</value>
   </data>
   <data name="DateFormatString" xml:space="preserve">
     <value>yyyy/M/dd  HH:mm:ss</value>
