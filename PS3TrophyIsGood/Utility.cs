@@ -6,10 +6,13 @@ public static class Utility
 {
 
     private static string[] TROPHY_FILES_EXTENSION = { ".PFD", ".SFO", ".DAT", ".SFM" };
+    private static string PFD_TOOL_DIRECTORY = "pfdtool";
+    private static string PFD_TOOL_APP = PFD_TOOL_DIRECTORY + "\\pfdtool.exe";
+
     public static void decryptSave(string gameid, string saveDir)
     {
         // update PFD
-        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", "-g " + gameid + " -d \"" + saveDir + "\" USR-DATA");
+        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo(PFD_TOOL_APP, "-g " + gameid + " -d \"" + saveDir + "\" USR-DATA");
         procStartInfo.RedirectStandardOutput = true;
         procStartInfo.UseShellExecute = false;
         procStartInfo.CreateNoWindow = true;
@@ -22,7 +25,7 @@ public static class Utility
     public static void encryptSave(string gameid, string saveDir)
     {
         // update PFD
-        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", "-g " + gameid + " -u \"" + saveDir + "\"");
+        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo(PFD_TOOL_APP, "-g " + gameid + " -u \"" + saveDir + "\"");
         procStartInfo.RedirectStandardOutput = true;
         procStartInfo.UseShellExecute = false;
         procStartInfo.CreateNoWindow = true;
@@ -31,7 +34,7 @@ public static class Utility
         proc.Start();
         proc.WaitForExit();
         // encrypt savedata
-        procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", "-g " + gameid + " -e \"" + saveDir + "\" USR-DATA");
+        procStartInfo = new System.Diagnostics.ProcessStartInfo(PFD_TOOL_APP, "-g " + gameid + " -e \"" + saveDir + "\" USR-DATA");
         procStartInfo.RedirectStandardOutput = true;
         procStartInfo.UseShellExecute = false;
         procStartInfo.CreateNoWindow = true;
@@ -44,8 +47,8 @@ public static class Utility
     public static void decryptTrophy(string saveDir)
     {
         // update PFD
-        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", " -d \"" + saveDir + "\" TROPTRNS.DAT");
-        procStartInfo.WorkingDirectory = "pfdtool";
+        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo(PFD_TOOL_APP, " -d \"" + saveDir + "\" TROPTRNS.DAT");
+        procStartInfo.WorkingDirectory = PFD_TOOL_DIRECTORY;
         procStartInfo.RedirectStandardOutput = true;
         procStartInfo.UseShellExecute = false;
         procStartInfo.CreateNoWindow = true;
@@ -69,19 +72,22 @@ public static class Utility
         if (profile != "Default Profile")
         {
             profile = "profiles\\" + profile;
-            var br = new BinaryReader(new FileStream(profile, FileMode.Open));
-            br.BaseStream.Position = 0xC;
-            br.BaseStream.Position = br.ReadInt32();
-            var profileId = br.ReadBytes(0x10);
-            br.Close();
-            var bw = new BinaryWriter(new FileStream(saveDir + "\\PARAM.SFO", FileMode.Open));
-            bw.BaseStream.Position = 0x274;
-            bw.Write(profileId);
-            bw.Close();
+            byte[] profileId;
+            using (var br = new BinaryReader(new FileStream(profile, FileMode.Open)))
+            {
+                br.BaseStream.Position = 0xC;
+                br.BaseStream.Position = br.ReadInt32();
+                profileId = br.ReadBytes(0x10);
+            }
+            using (var bw = new BinaryWriter(new FileStream(saveDir + "\\PARAM.SFO", FileMode.Open)))
+            {
+                bw.BaseStream.Position = 0x274;
+                bw.Write(profileId);
+            }
         }
         // update PFD
-        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", " -u \"" + saveDir + "\"");
-        procStartInfo.WorkingDirectory = "pfdtool";
+        System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo(PFD_TOOL_APP, " -u \"" + saveDir + "\"");
+        procStartInfo.WorkingDirectory = PFD_TOOL_DIRECTORY;
         procStartInfo.RedirectStandardOutput = true;
         procStartInfo.UseShellExecute = false;
         procStartInfo.CreateNoWindow = true;
@@ -90,8 +96,8 @@ public static class Utility
         proc.Start();
         proc.WaitForExit();
         // encrypt savedata
-        procStartInfo = new System.Diagnostics.ProcessStartInfo("pfdtool\\pfdtool.exe", " -e \"" + saveDir + "\" TROPTRNS.DAT");
-        procStartInfo.WorkingDirectory = "pfdtool";
+        procStartInfo = new System.Diagnostics.ProcessStartInfo(PFD_TOOL_APP, " -e \"" + saveDir + "\" TROPTRNS.DAT");
+        procStartInfo.WorkingDirectory = PFD_TOOL_DIRECTORY;
         procStartInfo.RedirectStandardOutput = true;
         procStartInfo.UseShellExecute = false;
         procStartInfo.CreateNoWindow = true;

@@ -117,61 +117,56 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Close" xml:space="preserve">
-    <value>關閉</value>
+  <data name="button1.Text" xml:space="preserve">
+    <value>Aceitar</value>
   </data>
-  <data name="CloseConfirm" xml:space="preserve">
-    <value>檔案尚未儲存，要儲存嗎？</value>
+  <data name="button2.Text" xml:space="preserve">
+    <value>Cancelar</value>
   </data>
-  <data name="Danger" xml:space="preserve">
-    <value>危險</value>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="checkBox1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>138, 17</value>
   </data>
-  <data name="DangerConfirm" xml:space="preserve">
-    <value>瞬間白金的時間將會相同，是很容易被PSN發現的方法，建議自己手動修改時間，即使如此還要繼續嗎？</value>
+  <data name="checkBox1.Text" xml:space="preserve">
+    <value>Aplicar cópia inteligente</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>刪除獎杯</value>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>Opções</value>
   </data>
-  <data name="DeleteTrophyConfirm" xml:space="preserve">
-    <value>此舉將會刪除已取得的獎杯，確定嗎？</value>
+  <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>91, 13</value>
   </data>
-  <data name="no" xml:space="preserve">
-    <value>否</value>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Minutos (máximo):</value>
   </data>
-  <data name="SyncedTrophyCanNotEdit" xml:space="preserve">
-    <value>為避免PSN查出，尚未同步的獎杯才可編輯。</value>
+  <data name="label4.Text" xml:space="preserve">
+    <value>Minutos (mínimo):</value>
   </data>
-  <data name="yes" xml:space="preserve">
-    <value>是</value>
+  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
   </data>
-  <data name="CantLoclPlatinumBeforOther" xml:space="preserve">
-    <value>你不可以在白金解鎖前解鎖其他獎杯</value>
+  <data name="label3.Text" xml:space="preserve">
+    <value>Anos</value>
   </data>
-  <data name="CantUnloclPlatinumBeforOther" xml:space="preserve">
-    <value>你不可以在解鎖其他獎杯前解鎖白金</value>
+  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>38, 13</value>
   </data>
-  <data name="RestartProgram" xml:space="preserve">
-    <value>重新啟動以完成設定。</value>
+  <data name="label2.Text" xml:space="preserve">
+    <value>Meses</value>
   </data>
-  <data name="CantFindGame" xml:space="preserve">
-    <value>找不到遊戲。</value>
+  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>28, 13</value>
   </data>
-  <data name="MinCantBeGreaterThanMax" xml:space="preserve">
-    <value>“最小分鐘數”不能大於“最大分鐘數”。</value>
+  <data name="label1.Text" xml:space="preserve">
+    <value>Dias</value>
   </data>
-  <data name="PsnSyncTime" xml:space="preserve">
-    <value>與PSN同步的最後一個獎杯的日期如下：{0}。 選擇一個大於此日期的日期。</value>
+  <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 13</value>
   </data>
-  <data name="RandomEndTime" xml:space="preserve">
-    <value>RandomEndTime</value>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Copiar do perfil:</value>
   </data>
-  <data name="RandomStartTime" xml:space="preserve">
-    <value>RandomStartTime</value>
-  </data>
-  <data name="DateFormatString" xml:space="preserve">
-    <value>yyyy/M/dd  HH:mm:ss</value>
-  </data>
-  <data name="FileNotFoundMsg" xml:space="preserve">
-    <value>找不到“ {0}”。 請選擇一個有效的獎杯文件夾。</value>
+  <data name="$this.Text" xml:space="preserve">
+    <value>Copiar do perfil</value>
   </data>
 </root>

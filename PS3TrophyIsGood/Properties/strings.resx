@@ -121,7 +121,7 @@
     <value>Close</value>
   </data>
   <data name="CloseConfirm" xml:space="preserve">
-    <value>The file has not been saved,  save it?</value>
+    <value>The file has not been saved, save it?</value>
   </data>
   <data name="Danger" xml:space="preserve">
     <value>Danger</value>
@@ -133,30 +133,45 @@
     <value>Delete Trophy</value>
   </data>
   <data name="DeleteTrophyConfirm" xml:space="preserve">
-    <value>This trophy will have been be deleted, sure?</value>
+    <value>This trophy will be deleted, sure?</value>
   </data>
   <data name="no" xml:space="preserve">
     <value>no</value>
   </data>
   <data name="SyncedTrophyCanNotEdit" xml:space="preserve">
-    <value>To avoid the PSN identified,only not been synchronized trophy can be edited.</value>
+    <value>Trophy already synchronized. Can't be modified.</value>
   </data>
   <data name="yes" xml:space="preserve">
     <value>yes</value>
   </data>
   <data name="CantLoclPlatinumBeforOther" xml:space="preserve">
-    <value>You can't lock other thropy when platinum is locked.</value>
+    <value>You can't lock other trophies while platinum is locked.</value>
   </data>
   <data name="CantUnloclPlatinumBeforOther" xml:space="preserve">
     <value>You can't unlock platinum when other thropy is unlocked.</value>
   </data>
   <data name="RestartProgram" xml:space="preserve">
-    <value>please restart the program to apply the setting.</value>
+    <value>Please restart the program to apply the setting.</value>
   </data>
   <data name="RandomStartTime" xml:space="preserve">
     <value>RandomStartTime</value>
   </data>
   <data name="RandomEndTime" xml:space="preserve">
     <value>RandomEndTime</value>
+  </data>
+  <data name="CantFindGame" xml:space="preserve">
+    <value>Can't find game.</value>
+  </data>
+  <data name="MinCantBeGreaterThanMax" xml:space="preserve">
+    <value>"Minimum minutes" can't be greater than "Maximum minutes".</value>
+  </data>
+  <data name="PsnSyncTime" xml:space="preserve">
+    <value>The last trophy synchronized with PSN has the following date: {0}. Select a date greater than this.</value>
+  </data>
+  <data name="DateFormatString" xml:space="preserve">
+    <value>yyyy/M/dd  HH:mm:ss</value>
+  </data>
+  <data name="FileNotFoundMsg" xml:space="preserve">
+    <value>"{0}" was not found. Please, select a valid trophy folder.</value>
   </data>
 </root>

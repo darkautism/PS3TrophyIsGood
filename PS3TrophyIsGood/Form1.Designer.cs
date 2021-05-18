@@ -86,6 +86,7 @@
             this.toolStripComboBox1});
             resources.ApplyResources(this.menuStrip1, "menuStrip1");
             this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Click += new System.EventHandler(this.menuStrip1_Click);
             // 
             // 檔案ToolStripMenuItem
             // 
@@ -189,7 +190,8 @@
             // 
             this.toolStripComboBox1.Items.AddRange(new object[] {
             resources.GetString("toolStripComboBox1.Items"),
-            resources.GetString("toolStripComboBox1.Items1")});
+            resources.GetString("toolStripComboBox1.Items1"),
+            resources.GetString("toolStripComboBox1.Items2")});
             this.toolStripComboBox1.Name = "toolStripComboBox1";
             resources.ApplyResources(this.toolStripComboBox1, "toolStripComboBox1");
             this.toolStripComboBox1.SelectedIndexChanged += new System.EventHandler(this.toolStripComboBox1_SelectedIndexChanged);
@@ -273,6 +275,7 @@
             // 
             // columnHeader7
             // 
+            this.columnHeader7.Tag = "Sincronizado";
             resources.ApplyResources(this.columnHeader7, "columnHeader7");
             // 
             // columnHeader6

@@ -61,6 +61,15 @@ namespace PS3TrophyIsGood.Properties {
         }
         
         /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a Can&apos;t find game..
+        /// </summary>
+        internal static string CantFindGame {
+            get {
+                return ResourceManager.GetString("CantFindGame", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查詢類似 You can&apos;t lock other thropy when platinum is locked. 的當地語系化字串。
         /// </summary>
         internal static string CantLoclPlatinumBeforOther {
@@ -115,6 +124,15 @@ namespace PS3TrophyIsGood.Properties {
         }
         
         /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a M/d/yyyy h:mm:ss tt.
+        /// </summary>
+        internal static string DateFormatString {
+            get {
+                return ResourceManager.GetString("DateFormatString", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查詢類似 Delete Trophy 的當地語系化字串。
         /// </summary>
         internal static string Delete {
@@ -133,11 +151,38 @@ namespace PS3TrophyIsGood.Properties {
         }
         
         /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a &quot;{0}&quot; was not found. Please, select a valid trophy folder..
+        /// </summary>
+        internal static string FileNotFoundMsg {
+            get {
+                return ResourceManager.GetString("FileNotFoundMsg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a &quot;Minimum minutes&quot; can&apos;t be greater than &quot;Maximum minutes&quot;..
+        /// </summary>
+        internal static string MinCantBeGreaterThanMax {
+            get {
+                return ResourceManager.GetString("MinCantBeGreaterThanMax", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查詢類似 no 的當地語系化字串。
         /// </summary>
         internal static string no {
             get {
                 return ResourceManager.GetString("no", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a The last trophy synchronized with PSN has the following date: {0}. Select a date greater than this..
+        /// </summary>
+        internal static string PsnSyncTime {
+            get {
+                return ResourceManager.GetString("PsnSyncTime", resourceCulture);
             }
         }
         

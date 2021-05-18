@@ -118,60 +118,60 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Close" xml:space="preserve">
-    <value>關閉</value>
+    <value>Fechar</value>
   </data>
   <data name="CloseConfirm" xml:space="preserve">
-    <value>檔案尚未儲存，要儲存嗎？</value>
+    <value>Deseja salvar o arquivo?</value>
   </data>
   <data name="Danger" xml:space="preserve">
-    <value>危險</value>
+    <value>Perigo</value>
   </data>
   <data name="DangerConfirm" xml:space="preserve">
-    <value>瞬間白金的時間將會相同，是很容易被PSN發現的方法，建議自己手動修改時間，即使如此還要繼續嗎？</value>
+    <value>Instant Platinum's time will be the same, is easily identify by the PSN, we recommend manually modify time, even so do you wish to continue?</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>刪除獎杯</value>
+    <value>Apagar troféu</value>
   </data>
   <data name="DeleteTrophyConfirm" xml:space="preserve">
-    <value>此舉將會刪除已取得的獎杯，確定嗎？</value>
+    <value>O troféu será apagado, deseja continuar?</value>
   </data>
   <data name="no" xml:space="preserve">
-    <value>否</value>
+    <value>não</value>
   </data>
   <data name="SyncedTrophyCanNotEdit" xml:space="preserve">
-    <value>為避免PSN查出，尚未同步的獎杯才可編輯。</value>
+    <value>Este troféu já está sincronizado. Não é possível modificá-lo.</value>
   </data>
   <data name="yes" xml:space="preserve">
-    <value>是</value>
+    <value>sim</value>
   </data>
   <data name="CantLoclPlatinumBeforOther" xml:space="preserve">
-    <value>你不可以在白金解鎖前解鎖其他獎杯</value>
+    <value>Não é possível bloquear outros troféus enquanto o de Platina está bloqueado.</value>
   </data>
   <data name="CantUnloclPlatinumBeforOther" xml:space="preserve">
-    <value>你不可以在解鎖其他獎杯前解鎖白金</value>
+    <value>Não é possível desbloquear o troféu de Platina enquanto os outros estiverem bloqueados.</value>
   </data>
   <data name="RestartProgram" xml:space="preserve">
-    <value>重新啟動以完成設定。</value>
-  </data>
-  <data name="CantFindGame" xml:space="preserve">
-    <value>找不到遊戲。</value>
-  </data>
-  <data name="MinCantBeGreaterThanMax" xml:space="preserve">
-    <value>“最小分鐘數”不能大於“最大分鐘數”。</value>
-  </data>
-  <data name="PsnSyncTime" xml:space="preserve">
-    <value>與PSN同步的最後一個獎杯的日期如下：{0}。 選擇一個大於此日期的日期。</value>
-  </data>
-  <data name="RandomEndTime" xml:space="preserve">
-    <value>RandomEndTime</value>
+    <value>Por favor reinicie o programa para aplicar as configurações.</value>
   </data>
   <data name="RandomStartTime" xml:space="preserve">
     <value>RandomStartTime</value>
   </data>
+  <data name="RandomEndTime" xml:space="preserve">
+    <value>RandomEndTime</value>
+  </data>
+  <data name="CantFindGame" xml:space="preserve">
+    <value>Não foi possível encontrar o jogo.</value>
+  </data>
+  <data name="MinCantBeGreaterThanMax" xml:space="preserve">
+    <value>"Minimum minutes" can't be greater than "Maximum minutes".</value>
+  </data>
+  <data name="PsnSyncTime" xml:space="preserve">
+    <value>O último troféu sincronizado com a PSN tem a seguinte data: {0}. Selecione uma data maior que essa.</value>
+  </data>
   <data name="DateFormatString" xml:space="preserve">
-    <value>yyyy/M/dd  HH:mm:ss</value>
+    <value>dd/MM/yyyy HH:mm:ss</value>
   </data>
   <data name="FileNotFoundMsg" xml:space="preserve">
-    <value>找不到“ {0}”。 請選擇一個有效的獎杯文件夾。</value>
+    <value>O arquivo "{0}" não foi encontrado. Selecione uma pasta de troféus válida.</value>
   </data>
 </root>
