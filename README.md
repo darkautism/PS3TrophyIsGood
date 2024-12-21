@@ -10,7 +10,7 @@ Best ps3 trophy editor ever
 	git submodule init
 	git submodule update --recursive
 
-After that, you can use visual studio to compile this project.
+After that, you can use visual studio 2019+ to compile this project (with .NET desktop development support).
 
 ## Download
 

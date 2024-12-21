@@ -292,7 +292,7 @@ namespace PS3TrophyIsGood
 
         private bool IsTrophyGot(int trophyID)
         {
-            return tpsn[trophyID].HasValue || tusr.trophyTimeInfoTable[trophyID].IsGet;
+            return (!isRpcs3Format.Checked && tpsn[trophyID].HasValue) || tusr.trophyTimeInfoTable[trophyID].IsGet;
         }
 
         private int GetCountBaseTrophiesGot()
@@ -386,7 +386,7 @@ namespace PS3TrophyIsGood
             { // 尚未同步的才可編輯
                 MessageBox.Show(Properties.strings.SyncedTrophyCanNotEdit);
             }
-            else if (tpsn[trophyID].HasValue)
+            else if (tpsn[trophyID].HasValue || (isRpcs3Format.Checked && IsTrophyGot(trophyID)))
             {
                 DeleteTrophy(trophyID, lvi);
             }
@@ -433,9 +433,9 @@ namespace PS3TrophyIsGood
                 path = path_in;
                 pathTemp = Utility.CopyTrophyDirToTemp(path_in);
                 Utility.decryptTrophy(pathTemp);
-                tconf = new TROPCONF(pathTemp);
-                tpsn = new TROPTRNS(pathTemp);
-                tusr = new TROPUSR(pathTemp);
+                tconf = new TROPCONF(pathTemp, isRpcs3Format.Checked);
+                tpsn = new TROPTRNS(pathTemp, isRpcs3Format.Checked);
+                tusr = new TROPUSR(pathTemp, isRpcs3Format.Checked);
 
                 lastSyncTrophyTime = tusr.LastSyncTime;
                 if (DateTime.Compare(tpsn.LastSyncTime, tusr.LastSyncTime) > 0)
@@ -642,6 +642,10 @@ namespace PS3TrophyIsGood
         {
             if (listViewEx1.IsEditing)
                 listViewEx1.EndEditing(true);
+        }
+        private void toggleRPCS3TrophyFormatToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            isRpcs3Format.Checked = !isRpcs3Format.Checked;
         }
     }
 }
