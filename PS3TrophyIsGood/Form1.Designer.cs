@@ -60,6 +60,7 @@
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.isRpcs3Format = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -94,6 +95,7 @@
             this.開啟ToolStripMenuItem,
             this.存檔ToolStripMenuItem,
             this.關閉檔案CToolStripMenuItem,
+            this.isRpcs3Format,
             this.toolStripSeparator1,
             this.關閉ToolStripMenuItem});
             this.檔案ToolStripMenuItem.Name = "檔案ToolStripMenuItem";
@@ -286,6 +288,9 @@
             // 
             resources.ApplyResources(this.columnHeader8, "columnHeader8");
             // 
+            this.isRpcs3Format.Name = "isRpcs3Format";
+            resources.ApplyResources(this.isRpcs3Format, "isRpcs3Format");
+            this.isRpcs3Format.Click += new System.EventHandler(this.toggleRPCS3TrophyFormatToolStripMenuItem_Click);
             // Form1
             // 
             this.AllowDrop = true;
@@ -349,6 +354,7 @@
         private System.Windows.Forms.ColumnHeader columnHeader8;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.ToolStripComboBox toolStripComboBox2;
+        private System.Windows.Forms.ToolStripMenuItem isRpcs3Format;
     }
 }
 

@@ -186,6 +186,12 @@
   <data name="關閉檔案CToolStripMenuItem.Text" xml:space="preserve">
     <value>&amp;Close File</value>
   </data>
+  <data name="isRpcs3Format.Size" type="System.Drawing.Size, System.Drawing">
+    <value>341, 34</value>
+  </data>
+  <data name="isRpcs3Format.Text" xml:space="preserve">
+    <value>Toggle RPCS3 trophy format</value>
+  </data>
   <data name="toolStripSeparator1.Size" type="System.Drawing.Size, System.Drawing">
     <value>166, 6</value>
   </data>
@@ -2854,6 +2860,12 @@
   </data>
   <data name="&gt;&gt;columnHeader8.Type" xml:space="preserve">
     <value>System.Windows.Forms.ColumnHeader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;isRpcs3Format.Name" xml:space="preserve">
+    <value>isRpcs3Format</value>
+  </data>
+  <data name="&gt;&gt;isRpcs3Format.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>Form1</value>
