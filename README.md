@@ -31,6 +31,9 @@ After that, you can use visual studio 2019+ to compile this project (with .NET d
 
 ## Change Log：
 
+	v1.3.8
+	- Add support RPCS3 format
+	
 	v1.3.7
 	1.  I've added a Resign option, so that you can resign a trophy folder to your specified PARAM.SFO (containing the desired account ID.)
 	    - To use this, you must place your own param.sfo in the directory on your computer, "profiles" with any name (as long as it keeps the extension). For example, you could use "DARKNACHO.SFO"
