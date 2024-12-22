@@ -2,7 +2,7 @@ name: .NET Core Desktop
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, githubaction ]
   pull_request:
     branches: [ master ]
 
