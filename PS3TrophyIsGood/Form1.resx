@@ -163,7 +163,7 @@
     <value>Ctrl+O</value>
   </data>
   <data name="開啟ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>169, 22</value>
+    <value>224, 22</value>
   </data>
   <data name="開啟ToolStripMenuItem.Text" xml:space="preserve">
     <value>&amp;Open</value>
@@ -172,7 +172,7 @@
     <value>Ctrl+S</value>
   </data>
   <data name="存檔ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>169, 22</value>
+    <value>224, 22</value>
   </data>
   <data name="存檔ToolStripMenuItem.Text" xml:space="preserve">
     <value>&amp;Save</value>
@@ -181,25 +181,25 @@
     <value>Ctrl+W</value>
   </data>
   <data name="關閉檔案CToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>169, 22</value>
+    <value>224, 22</value>
   </data>
   <data name="關閉檔案CToolStripMenuItem.Text" xml:space="preserve">
     <value>&amp;Close File</value>
   </data>
   <data name="isRpcs3Format.Size" type="System.Drawing.Size, System.Drawing">
-    <value>341, 34</value>
+    <value>224, 22</value>
   </data>
   <data name="isRpcs3Format.Text" xml:space="preserve">
     <value>Toggle RPCS3 trophy format</value>
   </data>
   <data name="toolStripSeparator1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>166, 6</value>
+    <value>221, 6</value>
   </data>
   <data name="關閉ToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
     <value>Alt+F4</value>
   </data>
   <data name="關閉ToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>169, 22</value>
+    <value>224, 22</value>
   </data>
   <data name="關閉ToolStripMenuItem.Text" xml:space="preserve">
     <value>E&amp;xit</value>
@@ -263,6 +263,12 @@
   </data>
   <data name="重新整理ToolStripMenuItem.Text" xml:space="preserve">
     <value>&amp;Refresh</value>
+  </data>
+  <data name="btnApplyTimestampOffset.Size" type="System.Drawing.Size, System.Drawing">
+    <value>109, 20</value>
+  </data>
+  <data name="btnApplyTimestampOffset.Text" xml:space="preserve">
+    <value>Bulk time modifier</value>
   </data>
   <data name="toolStripComboBox2.Size" type="System.Drawing.Size, System.Drawing">
     <value>121, 23</value>
@@ -541,7 +547,7 @@
     <value>listViewEx1</value>
   </data>
   <data name="&gt;&gt;listViewEx1.Type" xml:space="preserve">
-    <value>ListViewEx.ListViewEx, ListViewEx, Version=1.0.7807.1089, Culture=neutral, PublicKeyToken=null</value>
+    <value>ListViewEx.ListViewEx, ListViewEx, Version=1.0.9379.28803, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;listViewEx1.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2795,6 +2801,12 @@
   <data name="&gt;&gt;重新整理ToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="&gt;&gt;btnApplyTimestampOffset.Name" xml:space="preserve">
+    <value>btnApplyTimestampOffset</value>
+  </data>
+  <data name="&gt;&gt;btnApplyTimestampOffset.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="&gt;&gt;toolStripComboBox2.Name" xml:space="preserve">
     <value>toolStripComboBox2</value>
   </data>
@@ -2861,7 +2873,7 @@
   <data name="&gt;&gt;columnHeader8.Type" xml:space="preserve">
     <value>System.Windows.Forms.ColumnHeader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;isRpcs3Format.Name" xml:space="preserve">
+    <data name="&gt;&gt;isRpcs3Format.Name" xml:space="preserve">
     <value>isRpcs3Format</value>
   </data>
   <data name="&gt;&gt;isRpcs3Format.Type" xml:space="preserve">

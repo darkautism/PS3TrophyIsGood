@@ -42,6 +42,7 @@
             this.setRandomStartTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setRandomEndTimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.重新整理ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.btnApplyTimestampOffset = new System.Windows.Forms.ToolStripButton();
             this.toolStripComboBox2 = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripComboBox1 = new System.Windows.Forms.ToolStripComboBox();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
@@ -83,6 +84,7 @@
             this.檔案ToolStripMenuItem,
             this.進階ToolStripMenuItem,
             this.重新整理ToolStripMenuItem,
+            this.btnApplyTimestampOffset,
             this.toolStripComboBox2,
             this.toolStripComboBox1});
             resources.ApplyResources(this.menuStrip1, "menuStrip1");
@@ -118,7 +120,7 @@
             this.關閉檔案CToolStripMenuItem.Name = "關閉檔案CToolStripMenuItem";
             resources.ApplyResources(this.關閉檔案CToolStripMenuItem, "關閉檔案CToolStripMenuItem");
             this.關閉檔案CToolStripMenuItem.Click += new System.EventHandler(this.關閉檔案CToolStripMenuItem_Click);
-            // 
+           // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
@@ -182,6 +184,13 @@
             resources.ApplyResources(this.重新整理ToolStripMenuItem, "重新整理ToolStripMenuItem");
             this.重新整理ToolStripMenuItem.Name = "重新整理ToolStripMenuItem";
             this.重新整理ToolStripMenuItem.Click += new System.EventHandler(this.重新整理ToolStripMenuItem_Click);
+            // 
+            // btnApplyTimestampOffset
+            // 
+            this.btnApplyTimestampOffset.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnApplyTimestampOffset.Name = "btnApplyTimestampOffset";
+            resources.ApplyResources(this.btnApplyTimestampOffset, "btnApplyTimestampOffset");
+            this.btnApplyTimestampOffset.Click += new System.EventHandler(this.btnApplyTimestampOffset_Click);
             // 
             // toolStripComboBox2
             // 
@@ -287,7 +296,7 @@
             // columnHeader8
             // 
             resources.ApplyResources(this.columnHeader8, "columnHeader8");
-            // 
+            //
             this.isRpcs3Format.Name = "isRpcs3Format";
             resources.ApplyResources(this.isRpcs3Format, "isRpcs3Format");
             this.isRpcs3Format.Click += new System.EventHandler(this.toggleRPCS3TrophyFormatToolStripMenuItem_Click);
@@ -354,7 +363,8 @@
         private System.Windows.Forms.ColumnHeader columnHeader8;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.ToolStripComboBox toolStripComboBox2;
-        private System.Windows.Forms.ToolStripMenuItem isRpcs3Format;
+    private System.Windows.Forms.ToolStripMenuItem isRpcs3Format;
+    private System.Windows.Forms.ToolStripButton btnApplyTimestampOffset;
     }
 }
 

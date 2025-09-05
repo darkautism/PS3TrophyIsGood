@@ -32,6 +32,86 @@ namespace PS3TrophyIsGood
 
         private string txtDateTimeTmp;
 
+
+        // Timestamp offset config (from conf file)
+    private int offsetYears = 0, offsetMonths = 0, offsetDays = 0, offsetHours = 0, offsetMinutes = 0, offsetSeconds = 0, autoApply = 0;
+    private string confPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bulk_time_modify.conf");
+
+        public void LoadTimestampOffsetConfig()
+        {
+            offsetYears = 0; offsetMonths = 0; offsetDays = 0; offsetHours = 0; offsetMinutes = 0; offsetSeconds = 0; autoApply = 0;
+            if (!File.Exists(confPath)) return;
+            foreach (var line in File.ReadAllLines(confPath))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("#") || string.IsNullOrEmpty(trimmed) || trimmed.Replace(" ","") == "") continue;
+                var parts = trimmed.Split('=');
+                if (parts.Length != 2) continue;
+                var key = parts[0].Trim();
+                var value = parts[1].Trim();
+                int v;
+                if (!int.TryParse(value, out v)) continue;
+                switch (key)
+                {
+                    case "OffsetYears": offsetYears = v; break;
+                    case "OffsetMonths": offsetMonths = v; break;
+                    case "OffsetDays": offsetDays = v; break;
+                    case "OffsetHours": offsetHours = v; break;
+                    case "OffsetMinutes": offsetMinutes = v; break;
+                    case "OffsetSeconds": offsetSeconds = v; break;
+                    case "AutoApply": autoApply = v; break;
+                }
+            }
+        }
+
+        public void ApplyTimestampOffsetToAllTrophies()
+        {
+            // Debug: Show parsed offsets
+            // MessageBox.Show($"Years: {offsetYears}, Months: {offsetMonths}, Days: {offsetDays}, Hours: {offsetHours}, Minutes: {offsetMinutes}, Seconds: {offsetSeconds}");
+
+            var offset = new TimeSpan(offsetDays, offsetHours, offsetMinutes, offsetSeconds);
+            bool updated = false;
+            foreach (ListViewItem lvi in listViewEx1.Items)
+            {
+                if (lvi.SubItems.Count > 6 && DateTime.TryParse(lvi.SubItems[6].Text, out DateTime oldDate))
+                {
+                    DateTime newDate = oldDate;
+                    // Apply years
+                    if (offsetYears != 0)
+                    {
+                        try { newDate = newDate.AddYears(offsetYears); } catch { }
+                    }
+                    // Apply months
+                    if (offsetMonths != 0)
+                    {
+                        try { newDate = newDate.AddMonths(offsetMonths); } catch { }
+                    }
+                    // Apply days/hours/minutes/seconds
+                    if (offsetDays != 0 || offsetHours != 0 || offsetMinutes != 0 || offsetSeconds != 0)
+                    {
+                        try { newDate = newDate.Add(new TimeSpan(offsetDays, offsetHours, offsetMinutes, offsetSeconds)); } catch { }
+                    }
+                    if (newDate != oldDate)
+                    {
+                        updated = true;
+                    }
+                    lvi.SubItems[6].Text = newDate.ToString(Properties.strings.DateFormatString);
+                    int trophyId = lvi.ImageIndex;
+                    ChangeTrophyTime(trophyId, newDate, lvi);
+                }
+            }
+            if (updated)
+                MessageBox.Show("All trophy timestamps are updated.", "Timestamps Updated");
+            else
+                MessageBox.Show("No timestamps were changed.", "Timestamps Not Updated");
+        }
+
+        private void btnApplyTimestampOffset_Click(object sender, EventArgs e)
+        {
+            LoadTimestampOffsetConfig();
+            ApplyTimestampOffsetToAllTrophies();
+        }
+
         public Form1()
         {
             CultureInfo curinfo = null;
@@ -62,6 +142,13 @@ namespace PS3TrophyIsGood
             toolStripComboBox2.SelectedIndex = 0;
             dateTimePicker1.CustomFormat = Properties.strings.DateFormatString;
             copyFrom = new CopyFrom();
+
+            // Timestamp offset config
+            LoadTimestampOffsetConfig();
+            if (autoApply == 1)
+            {
+                ApplyTimestampOffsetToAllTrophies();
+            }
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
