@@ -40,7 +40,7 @@ jobs:
         Expand-Archive -Path flaresolverr_windows_x64.zip -DestinationPath PS3TrophyIsGood/bin/Release
 
     - name: Upload files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: PS3TrophyIsGood
         path: PS3TrophyIsGood/bin/Release
