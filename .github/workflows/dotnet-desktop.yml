@@ -39,7 +39,7 @@ jobs:
 
     - name: Download flaresolverr.exe and unzip
       run: |
-        Invoke-WebRequest -Uri https://github.com/FlareSolverr/FlareSolverr/releases/download/v3.4.4/flaresolverr_windows_x64.zip
+        Invoke-WebRequest -Uri https://github.com/FlareSolverr/FlareSolverr/releases/download/v3.4.4/flaresolverr_windows_x64.zip -OutFile flaresolverr_windows_x64.zip
         Expand-Archive -Path flaresolverr_windows_x64.zip -DestinationPath PS3TrophyIsGood/bin/Release
 
     - name: Upload files

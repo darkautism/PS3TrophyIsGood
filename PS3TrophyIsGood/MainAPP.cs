@@ -68,7 +68,8 @@ namespace PS3TrophyIsGood
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "flaresolverr.exe",
+                    FileName = "flaresolverr/flaresolverr.exe",
+                    WorkingDirectory = "flaresolverr",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -565,6 +566,8 @@ namespace PS3TrophyIsGood
             {
                 e.Cancel = !CloseFile();
             }
+            
+            process.Kill();
         }
 
         private void 瞬間白金ToolStripMenuItem_Click(object sender, EventArgs e)
