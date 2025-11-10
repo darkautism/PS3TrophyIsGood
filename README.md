@@ -18,6 +18,12 @@ After that, you can use visual studio 2019+ to compile this project (with .NET d
 
 ![Download link](https://user-images.githubusercontent.com/3898040/108462066-e8c87e00-72b6-11eb-80e1-1447c9cc2c2a.png)
 
+## 403 Error
+
+If you has 403 error, you can update FlareSolverr version from https://github.com/FlareSolverr/FlareSolverr.
+Just replace folder.
+
+
 ## 警告
 
 - 同步修改獎杯至PSN是危險的，有被ban的可能
@@ -30,6 +36,10 @@ After that, you can use visual studio 2019+ to compile this project (with .NET d
 
 
 ## Change Log：
+
+	v1.3.9
+	- Add a backend FlareSolverr proxy as cloudflare bypass.
+	- Fix #47, #50
 
 	v1.3.8
 	- Add support RPCS3 format
