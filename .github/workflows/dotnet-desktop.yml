@@ -28,14 +28,22 @@ jobs:
 
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
+    
+    - name: Restore
+      run: dotnet restore --locked-mode
 
     - name: Build the application
       run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
 
+    - name: Download flaresolverr.exe and unzip
+      run: |
+        Invoke-WebRequest -Uri https://github.com/FlareSolverr/FlareSolverr/releases/download/v3.4.4/flaresolverr_windows_x64.zip -OutFile flaresolverr_windows_x64.zip
+        Expand-Archive -Path flaresolverr_windows_x64.zip -DestinationPath PS3TrophyIsGood/bin/Release
+
     - name: Upload files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: PS3TrophyIsGood
         path: PS3TrophyIsGood/bin/Release

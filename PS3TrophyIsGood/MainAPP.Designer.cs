@@ -1,5 +1,7 @@
-﻿namespace PS3TrophyIsGood {
-    partial class Form1 {
+﻿namespace PS3TrophyIsGood
+{
+    partial class MainAPP
+    {
         /// <summary>
         /// 設計工具所需的變數。
         /// </summary>
@@ -9,8 +11,10 @@
         /// 清除任何使用中的資源。
         /// </summary>
         /// <param name="disposing">如果應該處置 Managed 資源則為 true，否則為 false。</param>
-        protected override void Dispose(bool disposing) {
-            if (disposing && (components != null)) {
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
                 components.Dispose();
             }
             base.Dispose(disposing);
@@ -22,9 +26,10 @@
         /// 此為設計工具支援所需的方法 - 請勿使用程式碼編輯器
         /// 修改這個方法的內容。
         /// </summary>
-        private void InitializeComponent() {
+        private void InitializeComponent()
+        {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainAPP));
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
@@ -32,6 +37,7 @@
             this.開啟ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.存檔ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.關閉檔案CToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.isRpcs3Format = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.關閉ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.進階ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -60,7 +66,6 @@
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.isRpcs3Format = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -118,6 +123,12 @@
             this.關閉檔案CToolStripMenuItem.Name = "關閉檔案CToolStripMenuItem";
             resources.ApplyResources(this.關閉檔案CToolStripMenuItem, "關閉檔案CToolStripMenuItem");
             this.關閉檔案CToolStripMenuItem.Click += new System.EventHandler(this.關閉檔案CToolStripMenuItem_Click);
+            // 
+            // isRpcs3Format
+            // 
+            this.isRpcs3Format.Name = "isRpcs3Format";
+            resources.ApplyResources(this.isRpcs3Format, "isRpcs3Format");
+            this.isRpcs3Format.Click += new System.EventHandler(this.toggleRPCS3TrophyFormatToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
@@ -288,10 +299,7 @@
             // 
             resources.ApplyResources(this.columnHeader8, "columnHeader8");
             // 
-            this.isRpcs3Format.Name = "isRpcs3Format";
-            resources.ApplyResources(this.isRpcs3Format, "isRpcs3Format");
-            this.isRpcs3Format.Click += new System.EventHandler(this.toggleRPCS3TrophyFormatToolStripMenuItem_Click);
-            // Form1
+            // MainAPP
             // 
             this.AllowDrop = true;
             resources.ApplyResources(this, "$this");
@@ -306,7 +314,7 @@
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
-            this.Name = "Form1";
+            this.Name = "MainAPP";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.DragDrop += new System.Windows.Forms.DragEventHandler(this.Form1_DragDrop);
             this.DragEnter += new System.Windows.Forms.DragEventHandler(this.Form1_DragEnter);

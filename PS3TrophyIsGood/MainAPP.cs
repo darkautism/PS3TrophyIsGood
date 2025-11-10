@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -9,10 +10,10 @@ using TROPHYParser;
 
 namespace PS3TrophyIsGood
 {
-    public partial class Form1 : Form
+    public partial class MainAPP : Form
     {
         private const long MINIMUM_POSSIBLE_DATE = 633347424000000000;
-
+        private Process process;
         TROPCONF tconf;
         TROPTRNS tpsn;
         TROPUSR tusr;
@@ -32,7 +33,7 @@ namespace PS3TrophyIsGood
 
         private string txtDateTimeTmp;
 
-        public Form1()
+        public MainAPP()
         {
             CultureInfo curinfo = null;
             switch (Properties.Settings.Default.Language)
@@ -62,6 +63,33 @@ namespace PS3TrophyIsGood
             toolStripComboBox2.SelectedIndex = 0;
             dateTimePicker1.CustomFormat = Properties.strings.DateFormatString;
             copyFrom = new CopyFrom();
+            // 啟用proxy
+            process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "flaresolverr/flaresolverr.exe",
+                    WorkingDirectory = "flaresolverr",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                },
+            };
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                {
+                    Console.WriteLine(e.Data);
+                    if (e.Data.Contains("Serving on"))
+                    {
+                        Utility.servingReady.Set(); // 觸發事件，表示已準備好
+                    }
+                }
+            };
+
+            process.Start();
+            process.BeginOutputReadLine();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -73,7 +101,9 @@ namespace PS3TrophyIsGood
         private void 關閉ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CloseFile();
+            process.Kill();
             Application.Exit();
+
         }
 
         private void 開啟ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -536,6 +566,8 @@ namespace PS3TrophyIsGood
             {
                 e.Cancel = !CloseFile();
             }
+            
+            process.Kill();
         }
 
         private void 瞬間白金ToolStripMenuItem_Click(object sender, EventArgs e)
