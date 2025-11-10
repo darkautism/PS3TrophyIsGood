@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 public static class Utility
 {
 
+    public static ManualResetEvent servingReady = new ManualResetEvent(false);
     private static string[] TROPHY_FILES_EXTENSION = { ".PFD", ".SFO", ".DAT", ".SFM" };
     private static string PFD_TOOL_DIRECTORY = "pfdtool";
     private static string PFD_TOOL_APP = PFD_TOOL_DIRECTORY + "\\pfdtool.exe";
