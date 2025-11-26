@@ -20,10 +20,8 @@ After that, you can use visual studio 2019+ to compile this project (with .NET d
 
 ## 403/500 Error
 
-If you has 403/500 error, you can update FlareSolverr version from https://github.com/FlareSolverr/FlareSolverr.
+If you has 403/500 error, you can update FlareSolverr version from [download](https://github.com/FlareSolverr/FlareSolverr/releases).
 Just replace folder.
-
-(download)[https://github.com/FlareSolverr/FlareSolverr/releases]
 
 
 ## 警告
