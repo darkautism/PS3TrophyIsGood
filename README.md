@@ -1,8 +1,23 @@
-# PS3TrophyIsGood
+<div align="center">
+
+<picture>
+   <source media="(prefers-color-scheme: dark)" srcset="doc/images/header-dark.png" width="100%" height="auto">
+   <img alt="Logo for SenseVoiceSmall Rust" src="doc/images/header-light.png" width="100%" height="auto">
+</picture>
+
+# PS3TrophyIsGood 
 
 Best ps3 trophy editor ever
-
+[![][github-stars-shield]][github-stars-link]
+[![][github-issues-shield]][github-issues-shield-link]
+[![][github-contributors-shield]][github-contributors-link]
+[![][license-shield]][license-shield-link]
+[![][last-commit-shield]][last-commit-shield-link]
 ![DEMO](http://4.bp.blogspot.com/-dMj1nom1pKc/USnCAcmDu6I/AAAAAAAADWg/UFiD6o3uguU/s1600/t1.png)
+
+</div>
+
+
 
 ## Build Tutorial
 
@@ -162,8 +177,19 @@ If this project has saved you time or helped you in your workflow, consider supp
 
 
 <!-- Link Definitions -->
+[release-shield]: https://img.shields.io/github/v/release/darkautism/PS3TrophyIsGood?color=369eff&labelColor=black&logo=github&style=flat-square
+[release-link]: https://github.com/darkautism/PS3TrophyIsGood/releases
+[license-shield]: https://img.shields.io/badge/license-apache%202.0-white?labelColor=black&style=flat-square
+[license-shield-link]: https://github.com/darkautism/PS3TrophyIsGood/blob/main/LICENSE
+[last-commit-shield]: https://img.shields.io/github/last-commit/darkautism/PS3TrophyIsGood?color=c4f042&labelColor=black&style=flat-square
+[last-commit-shield-link]: https://github.com/darkautism/PS3TrophyIsGood/commits/main
+[github-stars-shield]: https://img.shields.io/github/stars/darkautism/PS3TrophyIsGood?labelColor&style=flat-square&color=ffcb47
+[github-stars-link]: https://github.com/darkautism/PS3TrophyIsGood
+[github-issues-shield]: https://img.shields.io/github/issues/darkautism/PS3TrophyIsGood?labelColor=black&style=flat-square&color=ff80eb
+[github-issues-shield-link]: https://github.com/darkautism/PS3TrophyIsGood/issues
+[github-contributors-shield]: https://img.shields.io/github/contributors/darkautism/PS3TrophyIsGood?color=c4f042&labelColor=black&style=flat-square
+[github-contributors-link]: https://github.com/darkautism/PS3TrophyIsGood/graphs/contributors
 [ko-fi-shield]: https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white
 [ko-fi-link]: https://ko-fi.com/kautism
 [paypal-shield]: https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white
 [paypal-link]: https://paypal.me/kautism
-
