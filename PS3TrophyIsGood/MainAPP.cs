@@ -290,23 +290,23 @@ namespace PS3TrophyIsGood
                 {
                     case TropType.Platinum:
                         totalGrade += (int)TropGrade.Platinum;
-                        getGrade += IsTrophySync(i) ? (int)TropGrade.Platinum : 0;
+                        getGrade += IsTrophyGot(i) ? (int)TropGrade.Platinum : 0;
                         break;
                     case TropType.Gold:
                         totalGrade += (int)TropGrade.Gold;
-                        getGrade += IsTrophySync(i) ? (int)TropGrade.Gold : 0;
+                        getGrade += IsTrophyGot(i) ? (int)TropGrade.Gold : 0;
                         break;
                     case TropType.Silver:
                         totalGrade += (int)TropGrade.Silver;
-                        getGrade += IsTrophySync(i) ? (int)TropGrade.Silver : 0;
+                        getGrade += IsTrophyGot(i) ? (int)TropGrade.Silver : 0;
                         break;
                     case TropType.Bronze:
                         totalGrade += (int)TropGrade.Bronze;
-                        getGrade += IsTrophySync(i) ? (int)TropGrade.Bronze : 0;
+                        getGrade += IsTrophyGot(i) ? (int)TropGrade.Bronze : 0;
                         break;
                 }
 
-                if (IsTrophySync(i)) isGetTrophyNumber++;
+                if (IsTrophyGot(i)) isGetTrophyNumber++;
             }
             progressBar1.Maximum = totalGrade;
             progressBar1.Value = getGrade;
