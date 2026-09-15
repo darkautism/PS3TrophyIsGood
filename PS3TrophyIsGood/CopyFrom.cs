@@ -1,4 +1,4 @@
-﻿using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using System;
 using System.Collections.Generic;
@@ -50,8 +50,10 @@ namespace PS3TrophyIsGood
         private bool verificationClearanceDetected;
         private bool verificationFinishing;
         private bool verificationPaused;
+        private bool verificationPostClearanceNavigateIssued;
         private int verificationTargetNavigations;
         private DateTime verificationNavigationWindowStart;
+        private DateTime? verificationClearanceDetectedAt;
 
         public int ExpectedTrophyCount { get; set; }
 
@@ -387,6 +389,8 @@ namespace PS3TrophyIsGood
             verificationCheckingCookies = false;
             verificationClearanceDetected = false;
             verificationFinishing = false;
+            verificationPostClearanceNavigateIssued = false;
+            verificationClearanceDetectedAt = null;
             verificationTargetNavigations = 0;
             verificationNavigationWindowStart = DateTime.UtcNow;
 
@@ -503,14 +507,17 @@ namespace PS3TrophyIsGood
                 return;
 
             if (verificationClearanceDetected)
-                await FinishVerifiedPageAsync();
+                await ContinueAfterClearanceAsync(true);
             else
                 await CheckForClearanceAsync();
         }
 
         private async void verificationPollTimer_Tick(object sender, EventArgs e)
         {
-            await CheckForClearanceAsync();
+            if (verificationClearanceDetected)
+                await ContinueAfterClearanceAsync(false);
+            else
+                await CheckForClearanceAsync();
         }
 
         private async Task CheckForClearanceAsync()
@@ -538,10 +545,10 @@ namespace PS3TrophyIsGood
                 }
 
                 verificationClearanceDetected = true;
+                verificationClearanceDetectedAt = DateTime.UtcNow;
+                verificationPostClearanceNavigateIssued = false;
                 verificationTargetNavigations = 0;
-                verificationPollTimer.Stop();
-                statusLabel.Text = "Verification passed. Loading the trophy page...";
-                verificationWebView.CoreWebView2.Navigate(verificationTargetUrl);
+                statusLabel.Text = "Verification passed. Waiting for Cloudflare to finish...";
             }
             catch (Exception ex)
             {
@@ -554,10 +561,15 @@ namespace PS3TrophyIsGood
             }
         }
 
-        private async Task FinishVerifiedPageAsync()
+        private async Task ContinueAfterClearanceAsync(bool navigationCompleted)
         {
             if (!verificationActive || verificationPaused || verificationFinishing || !verificationClearanceDetected ||
                 verificationWebView == null || verificationWebView.CoreWebView2 == null)
+                return;
+
+            DateTime detectedAt = verificationClearanceDetectedAt ?? DateTime.UtcNow;
+            TimeSpan elapsed = DateTime.UtcNow - detectedAt;
+            if (elapsed < TimeSpan.FromMilliseconds(1200))
                 return;
 
             string currentUrl = verificationWebView.CoreWebView2.Source;
@@ -567,21 +579,56 @@ namespace PS3TrophyIsGood
             verificationFinishing = true;
             try
             {
+                if (navigationCompleted)
+                {
+                    await Task.Delay(500);
+                    if (!verificationActive || verificationPaused)
+                        return;
+                    elapsed = DateTime.UtcNow - detectedAt;
+                }
+
+                if (!verificationPostClearanceNavigateIssued && elapsed >= TimeSpan.FromSeconds(3))
+                {
+                    verificationPostClearanceNavigateIssued = true;
+                    statusLabel.Text = "Verification passed. Opening the trophy page...";
+                    verificationWebView.CoreWebView2.Navigate(verificationTargetUrl);
+                    return;
+                }
+
                 string htmlJson = await verificationWebView.CoreWebView2.ExecuteScriptAsync(
                     "document.documentElement ? document.documentElement.outerHTML : ''"
                 );
                 string html = JsonSerializer.Deserialize<string>(htmlJson) ?? string.Empty;
 
                 if (LooksLikeCloudflareChallenge(html))
-                    throw new InvalidOperationException(
-                        "Cloudflare set a clearance cookie but still returned the verification page. Retry verification instead of reloading forever."
+                {
+                    elapsed = DateTime.UtcNow - detectedAt;
+                    if (elapsed < TimeSpan.FromSeconds(15))
+                    {
+                        statusLabel.Text = "Verification passed. Cloudflare is finishing the redirect...";
+                        return;
+                    }
+
+                    PauseVerificationLoop(
+                        "Verification succeeded, but Cloudflare did not leave the challenge page. Click Retry to continue."
                     );
+                    return;
+                }
 
                 List<Pair> trophies = ParseTrophyDates(html);
                 if (trophies.Count == 0)
+                {
+                    elapsed = DateTime.UtcNow - detectedAt;
+                    if (elapsed < TimeSpan.FromSeconds(15))
+                    {
+                        statusLabel.Text = "Verification passed. Waiting for the trophy page contents...";
+                        return;
+                    }
+
                     throw new InvalidOperationException(
                         "Cloudflare verification passed, but no trophy timestamps were found. The site format may have changed."
                     );
+                }
 
                 ValidateTrophyCount(trophies);
                 CompleteCopy(trophies);
@@ -597,14 +644,23 @@ namespace PS3TrophyIsGood
             }
         }
 
-        private void PauseVerificationLoop()
+        private void PauseVerificationLoop(string message = null)
         {
             if (!verificationActive || verificationPaused)
                 return;
 
             verificationPaused = true;
             verificationPollTimer.Stop();
-            statusLabel.Text = "Cloudflare rejected the embedded browser repeatedly. Automatic reloads were stopped.";
+            try
+            {
+                if (verificationWebView != null && verificationWebView.CoreWebView2 != null)
+                    verificationWebView.CoreWebView2.Stop();
+            }
+            catch
+            {
+            }
+
+            statusLabel.Text = message ?? "Cloudflare rejected the embedded browser repeatedly. Automatic reloads were stopped.";
             verificationRetryButton.Visible = true;
             verificationRetryButton.Enabled = true;
             verificationRetryButton.BringToFront();
@@ -619,6 +675,8 @@ namespace PS3TrophyIsGood
 
             verificationPaused = false;
             verificationClearanceDetected = false;
+            verificationClearanceDetectedAt = null;
+            verificationPostClearanceNavigateIssued = false;
             verificationFinishing = false;
             verificationTargetNavigations = 0;
             verificationNavigationWindowStart = DateTime.UtcNow;
@@ -700,6 +758,8 @@ namespace PS3TrophyIsGood
             verificationPaused = false;
             verificationCheckingCookies = false;
             verificationClearanceDetected = false;
+            verificationClearanceDetectedAt = null;
+            verificationPostClearanceNavigateIssued = false;
             verificationFinishing = false;
             verificationTargetNavigations = 0;
             verificationTargetUrl = null;
