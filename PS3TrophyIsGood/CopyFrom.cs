@@ -29,6 +29,7 @@ namespace PS3TrophyIsGood
 
         private readonly List<Pair> loadedTrophies = new List<Pair>();
         private FlareSolverrManager helper;
+        private WebClient trophyClient;
         private Button startButton;
         private Label statusLabel;
         private ProgressBar helperProgress;
@@ -54,7 +55,6 @@ namespace PS3TrophyIsGood
             InitializeComponent();
             BuildHelperUi();
             groupBox1.Visible = false;
-            Shown += CopyFrom_Shown;
             VisibleChanged += CopyFrom_VisibleChanged;
         }
 
@@ -112,28 +112,34 @@ namespace PS3TrophyIsGood
             label6.Text = "PSN Trophy Leaders URL:";
         }
 
-        private void CopyFrom_Shown(object sender, EventArgs e)
-        {
-            ResetDialogState();
-        }
-
         private void CopyFrom_VisibleChanged(object sender, EventArgs e)
         {
-            if (!Visible)
+            if (Visible)
+            {
+                ResetDialogState();
+            }
+            else
+            {
+                CancelTrophyRequest();
                 ReleaseHelper();
+            }
         }
 
         private void ResetDialogState()
         {
+            CancelTrophyRequest();
             ReleaseHelper();
             loadedTrophies.Clear();
             helperReady = false;
             preparing = false;
             DialogResult = DialogResult.None;
 
+            textBox1.Text = string.Empty;
             textBox1.Enabled = false;
             accept.Enabled = false;
+            checkBox1.Checked = false;
             checkBox1.Enabled = false;
+            groupBox1.Visible = false;
             startButton.Enabled = true;
             button2.Enabled = true;
             helperProgress.Style = ProgressBarStyle.Continuous;
@@ -272,14 +278,20 @@ namespace PS3TrophyIsGood
             });
 
             string response;
-            using (WebClient client = new WebClient())
+            trophyClient = new WebClient();
+            trophyClient.Headers.Add(HttpRequestHeader.ContentType, "application/json");
+            try
             {
-                client.Headers.Add(HttpRequestHeader.ContentType, "application/json");
-                response = await client.UploadStringTaskAsync(
+                response = await trophyClient.UploadStringTaskAsync(
                     new Uri("http://127.0.0.1:8191/v1"),
                     "POST",
                     jsonPayload
                 );
+            }
+            finally
+            {
+                trophyClient.Dispose();
+                trophyClient = null;
             }
 
             string html;
@@ -378,6 +390,14 @@ namespace PS3TrophyIsGood
             while (current.InnerException != null)
                 current = current.InnerException;
             return current.Message;
+        }
+
+        private void CancelTrophyRequest()
+        {
+            if (trophyClient == null)
+                return;
+
+            try { trophyClient.CancelAsync(); } catch { }
         }
 
         private void ReleaseHelper()
