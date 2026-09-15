@@ -40,7 +40,6 @@ namespace PS3TrophyIsGood
         private ProgressBar helperProgress;
         private WebView2 verificationWebView;
         private Timer verificationPollTimer;
-        private string pendingVerificationUrl;
         private bool helperReady;
         private bool preparing;
         private bool verificationActive;
@@ -144,7 +143,6 @@ namespace PS3TrophyIsGood
             StopEmbeddedVerification(true);
             ReleaseHelper();
             loadedTrophies.Clear();
-            pendingVerificationUrl = null;
             helperReady = false;
             preparing = false;
             verificationClearSince = null;
@@ -375,7 +373,6 @@ namespace PS3TrophyIsGood
 
         private async Task ShowEmbeddedVerificationAsync(string targetUrl)
         {
-            pendingVerificationUrl = targetUrl;
             verificationClearSince = null;
             verificationActive = true;
             EnterVerificationLayout();
@@ -650,7 +647,6 @@ namespace PS3TrophyIsGood
             verificationActive = false;
             verificationInspecting = false;
             verificationClearSince = null;
-            pendingVerificationUrl = null;
             if (verificationPollTimer != null)
                 verificationPollTimer.Stop();
 
