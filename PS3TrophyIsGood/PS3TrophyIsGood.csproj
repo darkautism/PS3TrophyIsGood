@@ -197,7 +197,7 @@
       <Name>BigEndianTool</Name>
     </ProjectReference>
     <ProjectReference Include="..\ListViewEx\ListViewEx.csproj">
-      <Project>{35a5c415-0907-467b-9f57-099bb34fbf2b}</Project>
+      <Project>{35a5c415-0906-4ac7-b0f6-fe3cca884ad9}</Project>
       <Name>ListViewEx</Name>
     </ProjectReference>
     <ProjectReference Include="..\TROPHYParser\TROPHYParser\TROPHYParser.csproj">
@@ -213,7 +213,7 @@
     </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
       <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <ProductName>Microsoft .NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
