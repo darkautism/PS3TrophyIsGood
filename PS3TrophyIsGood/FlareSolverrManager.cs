@@ -21,6 +21,7 @@ namespace PS3TrophyIsGood
         private Process ownedProcess;
         private WebClient releaseClient;
         private WebClient downloadClient;
+        private WebClient requestClient;
         private bool disposed;
 
         public event Action<string> StatusChanged;
@@ -124,6 +125,79 @@ namespace PS3TrophyIsGood
             SetStatus("Version check failed. Starting cached FlareSolverr...");
             await StartOwnedProcessAsync(cachedExecutable, GetCachedVersionName(cachedExecutable));
             CleanupCache(GetCachedVersionName(cachedExecutable));
+        }
+
+        public async Task<PageResult> RequestPageAsync(string targetUrl)
+        {
+            ThrowIfDisposed();
+            string payload = JsonSerializer.Serialize(new
+            {
+                cmd = "request.get",
+                url = targetUrl,
+                maxTimeout = 60000
+            });
+
+            string response = await PostJsonAsync(payload);
+            ThrowIfDisposed();
+
+            using (JsonDocument json = JsonDocument.Parse(response))
+            {
+                JsonElement root = json.RootElement;
+                EnsureOkResponse(root, "FlareSolverr request failed");
+
+                JsonElement solution;
+                JsonElement htmlElement;
+                if (!root.TryGetProperty("solution", out solution) ||
+                    !solution.TryGetProperty("response", out htmlElement) ||
+                    htmlElement.ValueKind != JsonValueKind.String)
+                {
+                    throw new InvalidOperationException("FlareSolverr returned no page HTML.");
+                }
+
+                int httpStatus = 0;
+                JsonElement statusCodeElement;
+                if (solution.TryGetProperty("status", out statusCodeElement) && statusCodeElement.ValueKind == JsonValueKind.Number)
+                    statusCodeElement.TryGetInt32(out httpStatus);
+
+                return new PageResult(htmlElement.GetString(), httpStatus);
+            }
+        }
+
+        private async Task<string> PostJsonAsync(string payload)
+        {
+            ThrowIfDisposed();
+            requestClient = new WebClient();
+            requestClient.Headers.Add(HttpRequestHeader.ContentType, "application/json");
+            try
+            {
+                return await requestClient.UploadStringTaskAsync(
+                    new Uri(ApiUrl),
+                    "POST",
+                    payload
+                );
+            }
+            finally
+            {
+                requestClient.Dispose();
+                requestClient = null;
+            }
+        }
+
+        private static void EnsureOkResponse(JsonElement root, string prefix)
+        {
+            JsonElement statusElement;
+            if (root.TryGetProperty("status", out statusElement) &&
+                statusElement.ValueKind == JsonValueKind.String &&
+                string.Equals(statusElement.GetString(), "ok", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            JsonElement messageElement;
+            string message = root.TryGetProperty("message", out messageElement) && messageElement.ValueKind == JsonValueKind.String
+                ? messageElement.GetString()
+                : "unknown FlareSolverr error";
+            throw new InvalidOperationException(prefix + ": " + message);
         }
 
         private async Task<ReleaseInfo> GetLatestReleaseAsync()
@@ -261,35 +335,45 @@ namespace PS3TrophyIsGood
                     Debug.WriteLine("FlareSolverr error: " + e.Data);
             };
 
-            if (!process.Start())
-                throw new InvalidOperationException("FlareSolverr process could not be started.");
-
-            ownedProcess = process;
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-
-            SetStatus("Waiting for FlareSolverr health check...");
-            DateTime deadline = DateTime.UtcNow.AddSeconds(35);
-            while (DateTime.UtcNow < deadline)
+            try
             {
-                ThrowIfDisposed();
-                if (ownedProcess == null || ownedProcess.HasExited)
-                    throw new InvalidOperationException("FlareSolverr exited before it became ready.");
+                if (!process.Start())
+                    throw new InvalidOperationException("FlareSolverr process could not be started.");
 
-                string detectedVersion = await ProbeAsync();
-                ThrowIfDisposed();
-                if (detectedVersion != null)
+                ownedProcess = process;
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                SetStatus("Waiting for FlareSolverr health check...");
+                DateTime deadline = DateTime.UtcNow.AddSeconds(35);
+                while (DateTime.UtcNow < deadline)
                 {
-                    Version = string.IsNullOrWhiteSpace(detectedVersion) ? version : detectedVersion;
-                    SetProgress(100);
-                    SetStatus("FlareSolverr " + Version + " is ready.");
-                    return;
+                    ThrowIfDisposed();
+                    if (ownedProcess == null || ownedProcess.HasExited)
+                        throw new InvalidOperationException("FlareSolverr exited before it became ready.");
+
+                    string detectedVersion = await ProbeAsync();
+                    ThrowIfDisposed();
+                    if (detectedVersion != null)
+                    {
+                        Version = string.IsNullOrWhiteSpace(detectedVersion) ? version : detectedVersion;
+                        SetProgress(100);
+                        SetStatus("FlareSolverr " + Version + " is ready.");
+                        return;
+                    }
+
+                    await Task.Delay(500);
                 }
 
-                await Task.Delay(500);
+                throw new TimeoutException("FlareSolverr did not become ready within 35 seconds.");
             }
-
-            throw new TimeoutException("FlareSolverr did not become ready within 35 seconds.");
+            catch
+            {
+                if (ownedProcess == null)
+                    process.Dispose();
+                StopOwnedProcess();
+                throw;
+            }
         }
 
         private async Task<string> ProbeAsync()
@@ -492,7 +576,23 @@ namespace PS3TrophyIsGood
             {
                 try { downloadClient.CancelAsync(); } catch { }
             }
+            if (requestClient != null)
+            {
+                try { requestClient.CancelAsync(); } catch { }
+            }
             StopOwnedProcess();
+        }
+
+        internal sealed class PageResult
+        {
+            public string Html { get; private set; }
+            public int HttpStatus { get; private set; }
+
+            public PageResult(string html, int httpStatus)
+            {
+                Html = html;
+                HttpStatus = httpStatus;
+            }
         }
 
         private sealed class ReleaseInfo
