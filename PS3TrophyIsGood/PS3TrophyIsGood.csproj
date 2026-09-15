@@ -212,13 +212,16 @@
     </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
       <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 3.5 SP1</ProductName>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
       <Version>10.0.0-rc.2.25502.107</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Web.WebView2">
+      <Version>1.0.4191.47</Version>
     </PackageReference>
     <PackageReference Include="System.Buffers">
       <Version>4.6.1</Version>
