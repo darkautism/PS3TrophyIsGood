@@ -19,6 +19,7 @@ namespace PS3TrophyIsGood
 
         private readonly string cacheRoot;
         private Process ownedProcess;
+        private WebClient releaseClient;
         private WebClient downloadClient;
         private bool disposed;
 
@@ -44,6 +45,7 @@ namespace PS3TrophyIsGood
             SetStatus("Checking for an existing FlareSolverr...");
 
             string externalVersion = await ProbeAsync();
+            ThrowIfDisposed();
             if (externalVersion != null)
             {
                 Version = externalVersion;
@@ -66,6 +68,7 @@ namespace PS3TrophyIsGood
                 releaseError = ex;
             }
 
+            ThrowIfDisposed();
             if (release != null)
             {
                 string versionDirectory = GetVersionDirectory(release.TagName);
@@ -76,10 +79,12 @@ namespace PS3TrophyIsGood
                     try
                     {
                         await DownloadAndInstallAsync(release, versionDirectory);
+                        ThrowIfDisposed();
                         executable = FindExecutable(versionDirectory);
                     }
                     catch (Exception downloadError)
                     {
+                        ThrowIfDisposed();
                         string fallback = FindNewestCachedExecutable(null);
                         if (fallback == null)
                             throw new InvalidOperationException("Unable to download FlareSolverr and no cached version is available.", downloadError);
@@ -99,6 +104,7 @@ namespace PS3TrophyIsGood
                 }
                 catch (Exception startError)
                 {
+                    ThrowIfDisposed();
                     StopOwnedProcess();
                     string fallback = FindNewestCachedExecutable(release.TagName);
                     if (fallback == null)
@@ -122,10 +128,12 @@ namespace PS3TrophyIsGood
 
         private async Task<ReleaseInfo> GetLatestReleaseAsync()
         {
-            using (WebClient client = new WebClient())
+            releaseClient = new WebClient();
+            releaseClient.Headers.Add(HttpRequestHeader.UserAgent, "PS3TrophyIsGood");
+            try
             {
-                client.Headers.Add(HttpRequestHeader.UserAgent, "PS3TrophyIsGood");
-                string jsonText = await client.DownloadStringTaskAsync(LatestReleaseUrl);
+                string jsonText = await releaseClient.DownloadStringTaskAsync(LatestReleaseUrl);
+                ThrowIfDisposed();
                 using (JsonDocument json = JsonDocument.Parse(jsonText))
                 {
                     JsonElement root = json.RootElement;
@@ -148,12 +156,18 @@ namespace PS3TrophyIsGood
                     }
                 }
             }
+            finally
+            {
+                releaseClient.Dispose();
+                releaseClient = null;
+            }
 
             throw new InvalidOperationException("The latest FlareSolverr release does not contain " + WindowsAssetName + ".");
         }
 
         private async Task DownloadAndInstallAsync(ReleaseInfo release, string versionDirectory)
         {
+            ThrowIfDisposed();
             string archivePath = Path.Combine(cacheRoot, "flaresolverr-download.zip");
             string stagingDirectory = versionDirectory + ".staging";
 
@@ -173,6 +187,7 @@ namespace PS3TrophyIsGood
             try
             {
                 await downloadClient.DownloadFileTaskAsync(new Uri(release.DownloadUrl), archivePath);
+                ThrowIfDisposed();
             }
             finally
             {
@@ -182,10 +197,12 @@ namespace PS3TrophyIsGood
 
             SetStatus("Verifying FlareSolverr download...");
             VerifyDigest(archivePath, release.Digest);
+            ThrowIfDisposed();
 
             SetStatus("Installing FlareSolverr " + release.TagName + "...");
             Directory.CreateDirectory(stagingDirectory);
             ZipFile.ExtractToDirectory(archivePath, stagingDirectory);
+            ThrowIfDisposed();
 
             if (FindExecutable(stagingDirectory) == null)
             {
@@ -218,6 +235,7 @@ namespace PS3TrophyIsGood
 
         private async Task StartOwnedProcessAsync(string executable, string version)
         {
+            ThrowIfDisposed();
             StopOwnedProcess();
             SetStatus("Starting FlareSolverr " + version + "...");
             SetProgress(0);
@@ -254,10 +272,12 @@ namespace PS3TrophyIsGood
             DateTime deadline = DateTime.UtcNow.AddSeconds(35);
             while (DateTime.UtcNow < deadline)
             {
-                if (ownedProcess.HasExited)
+                ThrowIfDisposed();
+                if (ownedProcess == null || ownedProcess.HasExited)
                     throw new InvalidOperationException("FlareSolverr exited before it became ready.");
 
                 string detectedVersion = await ProbeAsync();
+                ThrowIfDisposed();
                 if (detectedVersion != null)
                 {
                     Version = string.IsNullOrWhiteSpace(detectedVersion) ? version : detectedVersion;
@@ -464,6 +484,10 @@ namespace PS3TrophyIsGood
                 return;
 
             disposed = true;
+            if (releaseClient != null)
+            {
+                try { releaseClient.CancelAsync(); } catch { }
+            }
             if (downloadClient != null)
             {
                 try { downloadClient.CancelAsync(); } catch { }
