@@ -16,7 +16,7 @@ namespace PS3TrophyIsGood
     {
         private const int CompactHeight = 172;
         private const int SmartCopyHeight = 312;
-        private const int VerificationHeight = 296;
+        private const int VerificationHeight = 288;
 
         private static readonly Regex DateCellRegex = new Regex(
             @"<td\b(?=[^>]*\bclass\s*=\s*[""'][^""']*\bdate_earned\b[^""']*[""'])[^>]*>(?<body>.*?)</td>|<div\b(?=[^>]*\bclass\s*=\s*[""'][^""']*\bdate_earned\b[^""']*[""'])[^>]*>(?<body>.*?)</div>",
@@ -406,8 +406,8 @@ namespace PS3TrophyIsGood
             {
                 verificationWebView = new WebView2
                 {
-                    Location = new Point(13, 49),
-                    Size = new Size(404, 200),
+                    Location = new Point(13, 45),
+                    Size = new Size(404, 198),
                     Visible = false,
                     TabStop = true
                 };
@@ -506,7 +506,7 @@ namespace PS3TrophyIsGood
                     if (LooksLikeCloudflareChallenge(html))
                     {
                         verificationClearSince = null;
-                        statusLabel.Text = "Complete the Cloudflare checkbox below. This panel will close automatically.";
+                        statusLabel.Text = "Complete the Cloudflare checkbox below. It will close automatically.";
                         await FocusChallengeWidgetAsync();
                         return;
                     }
@@ -613,9 +613,9 @@ namespace PS3TrophyIsGood
             checkBox1.Visible = false;
             groupBox1.Visible = false;
 
-            statusLabel.Location = new Point(13, 10);
-            statusLabel.Size = new Size(404, 32);
-            button2.Location = new Point(342, 258);
+            statusLabel.Location = new Point(13, 8);
+            statusLabel.Size = new Size(404, 30);
+            button2.Location = new Point(342, 251);
             button2.Visible = true;
             button2.Enabled = true;
             ClientSize = new Size(430, VerificationHeight);
