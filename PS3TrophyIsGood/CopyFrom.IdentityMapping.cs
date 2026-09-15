@@ -40,38 +40,58 @@ namespace PS3TrophyIsGood
         }
 
         private static readonly Regex PsntlTitleRegex = new Regex(
-            @"<a\b(?=[^>]*\bid\s*=\s*[\"\"']trophytitle\d+[\"\"'])[^>]*>(?<value>.*?)</a>",
+            "<a[^>]+id=\"trophytitle(?<id>\\d+)\"[^>]*>(?<value>.*?)</a>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
         );
 
         private static readonly Regex PsntlDetailRegex = new Regex(
-            @"<div\b(?=[^>]*\bid\s*=\s*[\"\"']trophydescription\d+[\"\"'])[^>]*>(?<value>.*?)</div>",
+            "<div[^>]+id=\"trophydescription\\d+\"[^>]*>(?<value>.*?)</div>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
         );
 
         private static readonly Regex PsntlTypeRegex = new Regex(
-            @"<td\b(?=[^>]*\bclass\s*=\s*[\"\"'][^\"\"']*\btrophytype\b[^\"\"']*[\"\"'])[^>]*>\s*(?<value>\d+)\s*</td>",
+            "<td[^>]+class=\"[^\"]*\\btrophytype\\b[^\"]*\"[^>]*>\\s*(?<value>\\d+)\\s*</td>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
         );
 
-        private static readonly Regex PsntlRemoteIdRegex = new Regex(
-            @"\bid\s*=\s*[\"\"']trophytitle(?<value>\d+)[\"\"']",
+        private static readonly Regex ProfilesRowIdentityRegex = new Regex(
+            "<tr\\b(?<attrs>[^>]*)>(?<body>.*?)</tr>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
+        );
+
+        private static readonly Regex ProfilesLinkIdentityRegex = new Regex(
+            "href=\"/trophy/\\d+-[^/\"]+/(?<id>\\d+)-[^\"]+\"",
             RegexOptions.IgnoreCase | RegexOptions.Compiled
         );
 
-        private static readonly Regex ProfilesIdentityTitleRegex = new Regex(
-            @"<a\b(?=[^>]*\bclass\s*=\s*[\"\"'][^\"\"']*\btitle\b[^\"\"']*[\"\"'])[^>]*>(?<value>.*?)</a>",
+        private static readonly Regex ProfilesTitleIdentityRegex = new Regex(
+            "<a[^>]+class=\"[^\"]*\\btitle\\b[^\"]*\"[^>]*>(?<value>.*?)</a>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
         );
 
-        private static readonly Regex ProfilesIdentityDetailRegex = new Regex(
-            @"<a\b(?=[^>]*\bclass\s*=\s*[\"\"'][^\"\"']*\btitle\b[^\"\"']*[\"\"'])[^>]*>.*?</a>\s*<br\s*/?>(?<value>.*?)</td>",
+        private static readonly Regex ProfilesDetailIdentityRegex = new Regex(
+            "<a[^>]+class=\"[^\"]*\\btitle\\b[^\"]*\"[^>]*>.*?</a>\\s*<br\\s*/?>(?<value>.*?)</td>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
         );
 
-        private static readonly Regex ProfilesIdentityTypeRegex = new Regex(
-            @"<img\b[^>]*\btitle\s*=\s*[\"\"'](?<value>Platinum|Gold|Silver|Bronze)[\"\"'][^>]*>",
+        private static readonly Regex ProfilesTypeIdentityRegex = new Regex(
+            "<img[^>]+title=\"(?<value>Platinum|Gold|Silver|Bronze)\"[^>]*>",
             RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
+
+        private static readonly Regex ProfilesEarnedIdentityRegex = new Regex(
+            "<picture[^>]+class=\"[^\"]*\\btrophy\\b[^\"]*\\bearned\\b[^\"]*\"",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
+        );
+
+        private static readonly Regex ProfilesDateIdentityRegex = new Regex(
+            "<span[^>]+class=\"[^\"]*\\btypo-top-date\\b[^\"]*\"[^>]*>\\s*<nobr>(?<value>.*?)</nobr>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
+        );
+
+        private static readonly Regex ProfilesTimeIdentityRegex = new Regex(
+            "<span[^>]+class=\"[^\"]*\\btypo-bottom-date\\b[^\"]*\"[^>]*>\\s*<nobr>(?<value>.*?)</nobr>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
         );
 
         private const int IdentityMaxChallengeReloads = 5;
@@ -102,16 +122,12 @@ namespace PS3TrophyIsGood
             localTrophyIdentities.Clear();
             if (trophies != null)
                 localTrophyIdentities.AddRange(trophies);
-
             ExpectedTrophyCount = localTrophyIdentities.Count;
         }
 
         public IEnumerable<Pair> copyFromPairs()
         {
-            return loadedTrophies
-                .OrderBy(t => t.Id)
-                .Select(t => new Pair(t.Id, t.Date))
-                .ToList();
+            return loadedTrophies.OrderBy(t => t.Id).Select(t => new Pair(t.Id, t.Date)).ToList();
         }
 
         public IEnumerable<Pair> smartCopyPairs()
@@ -146,7 +162,6 @@ namespace PS3TrophyIsGood
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-
             if (!identityHookInstalled)
             {
                 identityHookInstalled = true;
@@ -173,16 +188,9 @@ namespace PS3TrophyIsGood
             string targetUrl = (textBox1.Text ?? string.Empty).Trim();
             IdentitySource source;
             if (IsPsnProfilesTrophyUrl(targetUrl))
-            {
                 source = IdentitySource.PsnProfiles;
-            }
-            else if (Regex.IsMatch(
-                targetUrl,
-                @"^https://psntrophyleaders\.com/user/view/[^/\s]+/[^\s]+$",
-                RegexOptions.IgnoreCase))
-            {
+            else if (Regex.IsMatch(targetUrl, "^https://psntrophyleaders\\.com/user/view/[^/\\s]+/[^\\s]+$", RegexOptions.IgnoreCase))
                 source = IdentitySource.PsnTrophyLeaders;
-            }
             else
             {
                 MessageBox.Show(Properties.strings.CantFindGame);
@@ -228,7 +236,6 @@ namespace PS3TrophyIsGood
             {
                 if (!Visible)
                     return;
-
                 RestoreReadyControls();
                 statusLabel.Text = GetUsefulMessage(ex);
                 MessageBox.Show(this, statusLabel.Text, "Copy From", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -240,8 +247,8 @@ namespace PS3TrophyIsGood
             List<RemoteTrophyIdentity> remote = source == IdentitySource.PsnProfiles
                 ? ParseProfilesIdentities(html, httpStatus)
                 : ParsePsntlIdentities(html, httpStatus);
-
             List<Pair> mapped = MapRemoteToLocal(remote, source);
+
             LastRemoteTrophyCount = remote.Count;
             LastMatchedTrophyCount = mapped.Count;
             LastSourceName = GetIdentitySourceName(source);
@@ -263,7 +270,6 @@ namespace PS3TrophyIsGood
         private List<Pair> MapRemoteToLocal(List<RemoteTrophyIdentity> remote, IdentitySource source)
         {
             Dictionary<int, Pair> mapped = new Dictionary<int, Pair>();
-            HashSet<int> usedRemoteIds = new HashSet<int>();
 
             foreach (RemoteTrophyIdentity item in remote)
             {
@@ -299,24 +305,13 @@ namespace PS3TrophyIsGood
                     continue;
 
                 if (candidates.Count != 1)
-                {
-                    throw new InvalidOperationException(
-                        GetIdentitySourceName(source) + " trophy '" + item.Name +
-                        "' matches more than one local trophy. No trophies were modified."
-                    );
-                }
+                    throw new InvalidOperationException(GetIdentitySourceName(source) + " trophy '" + item.Name + "' is ambiguous locally. No trophies were modified.");
 
                 LocalTrophyIdentity localTrophy = candidates[0];
                 if (mapped.ContainsKey(localTrophy.Id))
-                {
-                    throw new InvalidOperationException(
-                        GetIdentitySourceName(source) + " mapped more than one source trophy to local trophy '" +
-                        localTrophy.Name + "'. No trophies were modified."
-                    );
-                }
+                    throw new InvalidOperationException(GetIdentitySourceName(source) + " mapped multiple source trophies to '" + localTrophy.Name + "'. No trophies were modified.");
 
                 mapped.Add(localTrophy.Id, new Pair(localTrophy.Id, item.Date));
-                usedRemoteIds.Add(item.RemoteId);
             }
 
             int expectedIntersection = Math.Min(remote.Count, localTrophyIdentities.Count);
@@ -325,7 +320,7 @@ namespace PS3TrophyIsGood
                 throw new InvalidOperationException(
                     GetIdentitySourceName(source) + " has " + remote.Count + " trophy rows and the local set has " +
                     localTrophyIdentities.Count + ", but only " + mapped.Count +
-                    " trophies could be matched 1:1 by name/type. No trophies were modified."
+                    " trophies could be matched 1:1 by identity. No trophies were modified."
                 );
             }
 
@@ -343,26 +338,23 @@ namespace PS3TrophyIsGood
                 Match title = PsntlTitleRegex.Match(body);
                 Match detail = PsntlDetailRegex.Match(body);
                 Match type = PsntlTypeRegex.Match(body);
-                Match remoteId = PsntlRemoteIdRegex.Match(body);
                 Match dateCell = DateCellRegex.Match(body);
-
                 if (!title.Success || !dateCell.Success)
                     throw new InvalidOperationException("PSN Trophy Leaders returned a trophy row without identity/date data. No trophies were modified.");
 
                 Match timestamp = SortValueRegex.Match(dateCell.Groups["body"].Value);
                 if (!timestamp.Success)
                     timestamp = SortAttributeRegex.Match(dateCell.Value);
-
                 if (!timestamp.Success || !long.TryParse(timestamp.Groups["value"].Value, out long date))
                     throw new InvalidOperationException("PSN Trophy Leaders returned an invalid trophy timestamp. No trophies were modified.");
 
-                int parsedRemoteId = rowIndex + 1;
-                if (remoteId.Success)
-                    int.TryParse(remoteId.Groups["value"].Value, out parsedRemoteId);
+                int remoteId = rowIndex + 1;
+                if (int.TryParse(title.Groups["id"].Value, out int parsedId))
+                    remoteId = parsedId;
 
                 trophies.Add(new RemoteTrophyIdentity
                 {
-                    RemoteId = parsedRemoteId,
+                    RemoteId = remoteId,
                     Name = CleanIdentityHtml(title.Groups["value"].Value),
                     Detail = detail.Success ? CleanIdentityHtml(detail.Groups["value"].Value) : string.Empty,
                     Type = type.Success ? PsntlNumericTypeToCode(type.Groups["value"].Value) : string.Empty,
@@ -375,52 +367,43 @@ namespace PS3TrophyIsGood
                 string statusSuffix = httpStatus > 0 ? " (HTTP " + httpStatus + ")" : string.Empty;
                 throw new InvalidOperationException("PSN Trophy Leaders returned no parseable trophy rows" + statusSuffix + ".");
             }
-
             return trophies;
         }
 
         private static List<RemoteTrophyIdentity> ParseProfilesIdentities(string html, int httpStatus)
         {
             List<RemoteTrophyIdentity> trophies = new List<RemoteTrophyIdentity>();
-            MatchCollection rows = ProfilesIdentityRowRegex.Matches(html ?? string.Empty);
+            MatchCollection rows = ProfilesRowIdentityRegex.Matches(html ?? string.Empty);
 
             foreach (Match row in rows)
             {
                 string body = row.Groups["body"].Value;
-                Match trophyLink = ProfilesIdentityLinkRegex.Match(body);
+                Match trophyLink = ProfilesLinkIdentityRegex.Match(body);
                 if (!trophyLink.Success)
                     continue;
 
                 if (!int.TryParse(trophyLink.Groups["id"].Value, out int remoteId) || remoteId <= 0)
                     throw new InvalidOperationException("PSNProfiles returned an invalid trophy number. No trophies were modified.");
 
-                Match title = ProfilesIdentityTitleRegex.Match(body);
-                Match detail = ProfilesIdentityDetailRegex.Match(body);
-                Match type = ProfilesIdentityTypeRegex.Match(body);
+                Match title = ProfilesTitleIdentityRegex.Match(body);
+                Match detail = ProfilesDetailIdentityRegex.Match(body);
+                Match type = ProfilesTypeIdentityRegex.Match(body);
                 if (!title.Success)
                     throw new InvalidOperationException("PSNProfiles returned a trophy without a readable title. No trophies were modified.");
 
                 string attrs = row.Groups["attrs"].Value;
-                bool earned = Regex.IsMatch(attrs, @"\bclass\s*=\s*[\"\"'][^\"\"']*\bcompleted\b", RegexOptions.IgnoreCase) ||
-                              ProfilesIdentityEarnedRegex.IsMatch(body);
+                bool earned = Regex.IsMatch(attrs, "\\bclass\\s*=\\s*\"[^\"]*\\bcompleted\\b", RegexOptions.IgnoreCase) ||
+                              ProfilesEarnedIdentityRegex.IsMatch(body);
 
                 long timestamp = 0;
                 if (earned)
                 {
-                    Match date = ProfilesIdentityDateRegex.Match(body);
-                    Match time = ProfilesIdentityTimeRegex.Match(body);
+                    Match date = ProfilesDateIdentityRegex.Match(body);
+                    Match time = ProfilesTimeIdentityRegex.Match(body);
                     if (!date.Success || !time.Success)
-                    {
-                        throw new InvalidOperationException(
-                            "PSNProfiles trophy " + remoteId + " is marked earned but has no readable earned date. No trophies were modified."
-                        );
-                    }
+                        throw new InvalidOperationException("PSNProfiles trophy " + remoteId + " is earned but has no readable date. No trophies were modified.");
 
-                    timestamp = ParsePsnProfilesTimestamp(
-                        date.Groups["value"].Value,
-                        time.Groups["value"].Value,
-                        remoteId
-                    );
+                    timestamp = ParsePsnProfilesTimestamp(date.Groups["value"].Value, time.Groups["value"].Value, remoteId);
                 }
 
                 trophies.Add(new RemoteTrophyIdentity
@@ -438,38 +421,12 @@ namespace PS3TrophyIsGood
                 string statusSuffix = httpStatus > 0 ? " (HTTP " + httpStatus + ")" : string.Empty;
                 throw new InvalidOperationException("PSNProfiles returned no parseable trophy rows" + statusSuffix + ".");
             }
-
             return trophies;
         }
 
-        private static readonly Regex ProfilesIdentityRowRegex = new Regex(
-            @"<tr\b(?<attrs>[^>]*)>(?<body>.*?)</tr>",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
-        );
-
-        private static readonly Regex ProfilesIdentityLinkRegex = new Regex(
-            @"href\s*=\s*[\"\"']/trophy/\d+-[^/\"\"']+/(?<id>\d+)-[^\"\"']+[\"\"']",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled
-        );
-
-        private static readonly Regex ProfilesIdentityEarnedRegex = new Regex(
-            @"<picture\b(?=[^>]*\bclass\s*=\s*[\"\"'][^\"\"']*\btrophy\b[^\"\"']*\bearned\b[^\"\"']*[\"\"'])",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
-        );
-
-        private static readonly Regex ProfilesIdentityDateRegex = new Regex(
-            @"<span\b(?=[^>]*\bclass\s*=\s*[\"\"'][^\"\"']*\btypo-top-date\b[^\"\"']*[\"\"'])[^>]*>\s*<nobr>(?<value>.*?)</nobr>",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
-        );
-
-        private static readonly Regex ProfilesIdentityTimeRegex = new Regex(
-            @"<span\b(?=[^>]*\bclass\s*=\s*[\"\"'][^\"\"']*\btypo-bottom-date\b[^\"\"']*[\"\"'])[^>]*>\s*<nobr>(?<value>.*?)</nobr>",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
-        );
-
         private static string CleanIdentityHtml(string value)
         {
-            string withoutTags = Regex.Replace(value ?? string.Empty, @"<[^>]+>", string.Empty);
+            string withoutTags = Regex.Replace(value ?? string.Empty, "<[^>]+>", string.Empty);
             return WebUtility.HtmlDecode(withoutTags ?? string.Empty).Trim();
         }
 
@@ -477,13 +434,13 @@ namespace PS3TrophyIsGood
         {
             string decoded = CleanIdentityHtml(value).Normalize(NormalizationForm.FormKC);
             decoded = decoded.Replace('’', '\'').Replace('‘', '\'').Replace('“', '"').Replace('”', '"');
-            return Regex.Replace(decoded, @"\s+", " ").Trim().ToLowerInvariant();
+            return Regex.Replace(decoded, "\\s+", " ").Trim().ToLowerInvariant();
         }
 
         private static string NormalizeIdentityDetail(string value)
         {
             string normalized = NormalizeIdentityText(value);
-            normalized = Regex.Replace(normalized, @"\s*\([^()]*\)\s*$", string.Empty).Trim();
+            normalized = Regex.Replace(normalized, "\\s*\\([^()]*\\)\\s*$", string.Empty).Trim();
             return normalized.TrimEnd('.', ' ', '\t', '\r', '\n');
         }
 
@@ -499,10 +456,8 @@ namespace PS3TrophyIsGood
                 case "P":
                 case "G":
                 case "S":
-                case "B":
-                    return normalized;
-                default:
-                    return string.Empty;
+                case "B": return normalized;
+                default: return string.Empty;
             }
         }
 
@@ -608,22 +563,18 @@ namespace PS3TrophyIsGood
 
             string userDataFolder = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "PS3TrophyIsGood",
-                "WebView2"
+                "PS3TrophyIsGood", "WebView2"
             );
             System.IO.Directory.CreateDirectory(userDataFolder);
 
-            CoreWebView2Environment.GetAvailableBrowserVersionString();
             CoreWebView2Environment environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
             await identityVerificationWebView.EnsureCoreWebView2Async(environment);
-
             CoreWebView2Settings settings = identityVerificationWebView.CoreWebView2.Settings;
             settings.AreDefaultContextMenusEnabled = false;
             settings.AreDevToolsEnabled = false;
             settings.IsStatusBarEnabled = false;
             settings.IsZoomControlEnabled = false;
             settings.AreBrowserAcceleratorKeysEnabled = false;
-
             identityVerificationWebView.CoreWebView2.NavigationStarting += identityVerificationWebView_NavigationStarting;
             identityVerificationWebView.CoreWebView2.NewWindowRequested += identityVerificationWebView_NewWindowRequested;
             identityVerificationWebView.CoreWebView2.ProcessFailed += identityVerificationWebView_ProcessFailed;
@@ -665,7 +616,6 @@ namespace PS3TrophyIsGood
         {
             if (!identityVerificationActive || IsDisposed || Disposing)
                 return;
-
             BeginInvoke(new Action(delegate
             {
                 HandleIdentityVerificationFailure(new InvalidOperationException("The embedded verification browser stopped unexpectedly."));
@@ -676,7 +626,6 @@ namespace PS3TrophyIsGood
         {
             if (!identityVerificationActive || identityVerificationPaused || !e.IsSuccess)
                 return;
-
             if (identityClearanceDetected)
                 await ContinueAfterIdentityClearanceAsync(true);
             else
@@ -701,19 +650,12 @@ namespace PS3TrophyIsGood
             try
             {
                 string cookieUrl = identityVerificationSource == IdentitySource.PsnProfiles
-                    ? "https://psnprofiles.com/"
-                    : "https://psntrophyleaders.com/";
-
-                IReadOnlyList<CoreWebView2Cookie> cookies = await identityVerificationWebView.CoreWebView2.CookieManager
-                    .GetCookiesAsync(cookieUrl);
-
+                    ? "https://psnprofiles.com/" : "https://psntrophyleaders.com/";
+                IReadOnlyList<CoreWebView2Cookie> cookies = await identityVerificationWebView.CoreWebView2.CookieManager.GetCookiesAsync(cookieUrl);
                 if (!identityVerificationActive || identityVerificationPaused)
                     return;
 
-                bool hasClearance = cookies.Any(cookie =>
-                    string.Equals(cookie.Name, "cf_clearance", StringComparison.OrdinalIgnoreCase));
-
-                if (!hasClearance)
+                if (!cookies.Any(cookie => string.Equals(cookie.Name, "cf_clearance", StringComparison.OrdinalIgnoreCase)))
                 {
                     statusLabel.Text = "Complete the Cloudflare checkbox below. Waiting for verification...";
                     return;
@@ -746,7 +688,6 @@ namespace PS3TrophyIsGood
             TimeSpan elapsed = DateTime.UtcNow - detectedAt;
             if (elapsed < TimeSpan.FromMilliseconds(1200))
                 return;
-
             if (!IsIdentitySourceHostUri(identityVerificationWebView.CoreWebView2.Source, identityVerificationSource))
                 return;
 
@@ -782,10 +723,7 @@ namespace PS3TrophyIsGood
                         statusLabel.Text = "Verification passed. Cloudflare is finishing the redirect...";
                         return;
                     }
-
-                    PauseIdentityVerificationLoop(
-                        "Verification succeeded, but Cloudflare did not leave the challenge page. Click Retry to continue."
-                    );
+                    PauseIdentityVerificationLoop("Verification succeeded, but Cloudflare did not leave the challenge page. Click Retry to continue.");
                     return;
                 }
 
@@ -814,9 +752,7 @@ namespace PS3TrophyIsGood
                 if (identityVerificationWebView != null && identityVerificationWebView.CoreWebView2 != null)
                     identityVerificationWebView.CoreWebView2.Stop();
             }
-            catch
-            {
-            }
+            catch { }
 
             statusLabel.Text = message ?? "Cloudflare rejected the embedded browser repeatedly. Automatic reloads were stopped.";
             identityRetryButton.Visible = true;
@@ -857,7 +793,6 @@ namespace PS3TrophyIsGood
             identityVerificationTargetUrl = null;
             if (identityVerificationTimer != null)
                 identityVerificationTimer.Stop();
-
             if (identityRetryButton != null)
                 identityRetryButton.Visible = false;
 
@@ -886,7 +821,6 @@ namespace PS3TrophyIsGood
         {
             if (string.IsNullOrWhiteSpace(value) || value == "about:blank")
                 return true;
-
             if (!Uri.TryCreate(value, UriKind.Absolute, out Uri uri))
                 return false;
 
@@ -894,7 +828,6 @@ namespace PS3TrophyIsGood
             if (host.Equals("challenges.cloudflare.com", StringComparison.OrdinalIgnoreCase) ||
                 host.EndsWith(".cloudflare.com", StringComparison.OrdinalIgnoreCase))
                 return true;
-
             return IsIdentitySourceHost(host, source);
         }
 
@@ -908,13 +841,8 @@ namespace PS3TrophyIsGood
         private static bool IsIdentitySourceHost(string host, IdentitySource source)
         {
             if (source == IdentitySource.PsnProfiles)
-            {
-                return host.Equals("psnprofiles.com", StringComparison.OrdinalIgnoreCase) ||
-                       host.EndsWith(".psnprofiles.com", StringComparison.OrdinalIgnoreCase);
-            }
-
-            return host.Equals("psntrophyleaders.com", StringComparison.OrdinalIgnoreCase) ||
-                   host.EndsWith(".psntrophyleaders.com", StringComparison.OrdinalIgnoreCase);
+                return host.Equals("psnprofiles.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".psnprofiles.com", StringComparison.OrdinalIgnoreCase);
+            return host.Equals("psntrophyleaders.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith(".psntrophyleaders.com", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
