@@ -145,7 +145,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\strings.pt-BR.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>strings.pt-BR.Designer.cs</LastGenOutput>
+      <LastGenOutput>strings.pt-BR.Designer.cs</LastOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
