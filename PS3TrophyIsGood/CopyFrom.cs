@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Net;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -29,10 +27,11 @@ namespace PS3TrophyIsGood
 
         private readonly List<Pair> loadedTrophies = new List<Pair>();
         private FlareSolverrManager helper;
-        private WebClient trophyClient;
         private Button startButton;
+        private Button verifyButton;
         private Label statusLabel;
         private ProgressBar helperProgress;
+        private string pendingVerificationUrl;
         private bool helperReady;
         private bool preparing;
 
@@ -61,7 +60,7 @@ namespace PS3TrophyIsGood
         private void BuildHelperUi()
         {
             AutoSize = false;
-            ClientSize = new Size(430, 344);
+            ClientSize = new Size(430, 370);
 
             label6.Location = new Point(13, 10);
             textBox1.Location = new Point(13, 30);
@@ -94,20 +93,31 @@ namespace PS3TrophyIsGood
             };
             startButton.Click += startButton_Click;
 
-            accept.Location = new Point(96, 124);
-            accept.Size = new Size(104, 23);
+            verifyButton = new Button
+            {
+                Location = new Point(96, 124),
+                Size = new Size(120, 23),
+                Text = "Verify in browser",
+                UseVisualStyleBackColor = true,
+                Visible = false
+            };
+            verifyButton.Click += verifyButton_Click;
+
+            accept.Location = new Point(224, 124);
+            accept.Size = new Size(110, 23);
             accept.Text = "Copy trophies";
 
-            checkBox1.Location = new Point(210, 127);
             button2.Location = new Point(342, 124);
             button2.Size = new Size(75, 23);
 
-            groupBox1.Location = new Point(13, 157);
+            checkBox1.Location = new Point(13, 154);
+            groupBox1.Location = new Point(13, 178);
             groupBox1.Size = new Size(404, 133);
 
             Controls.Add(statusLabel);
             Controls.Add(helperProgress);
             Controls.Add(startButton);
+            Controls.Add(verifyButton);
 
             label6.Text = "PSN Trophy Leaders URL:";
         }
@@ -120,16 +130,15 @@ namespace PS3TrophyIsGood
             }
             else
             {
-                CancelTrophyRequest();
                 ReleaseHelper();
             }
         }
 
         private void ResetDialogState()
         {
-            CancelTrophyRequest();
             ReleaseHelper();
             loadedTrophies.Clear();
+            pendingVerificationUrl = null;
             helperReady = false;
             preparing = false;
             DialogResult = DialogResult.None;
@@ -141,6 +150,8 @@ namespace PS3TrophyIsGood
             checkBox1.Enabled = false;
             groupBox1.Visible = false;
             startButton.Enabled = true;
+            verifyButton.Visible = false;
+            verifyButton.Enabled = false;
             button2.Enabled = true;
             helperProgress.Style = ProgressBarStyle.Continuous;
             helperProgress.Value = 0;
@@ -154,6 +165,7 @@ namespace PS3TrophyIsGood
 
             preparing = true;
             startButton.Enabled = false;
+            verifyButton.Visible = false;
             textBox1.Enabled = false;
             accept.Enabled = false;
             checkBox1.Enabled = false;
@@ -194,6 +206,56 @@ namespace PS3TrophyIsGood
             finally
             {
                 preparing = false;
+            }
+        }
+
+        private async void verifyButton_Click(object sender, EventArgs e)
+        {
+            if (helper == null || string.IsNullOrEmpty(pendingVerificationUrl))
+                return;
+
+            string targetUrl = pendingVerificationUrl;
+            SetBusy("Preparing verification browser...");
+            verifyButton.Visible = true;
+            verifyButton.Enabled = false;
+
+            try
+            {
+                FlareSolverrManager.PageResult page = await helper.RequestPageWithInteractiveVerificationAsync(targetUrl);
+                if (!Visible)
+                    return;
+
+                List<Pair> trophies = ParseTrophyPage(page);
+                ValidateTrophyCount(trophies);
+                CompleteCopy(trophies);
+            }
+            catch (CloudflareChallengeException)
+            {
+                if (!Visible)
+                    return;
+
+                helperProgress.Style = ProgressBarStyle.Continuous;
+                helperProgress.Value = 0;
+                statusLabel.Text = "Verification was not completed. Click Verify in browser to try again.";
+                verifyButton.Visible = true;
+                verifyButton.Enabled = true;
+                button2.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                if (!Visible)
+                    return;
+
+                helperReady = false;
+                pendingVerificationUrl = null;
+                verifyButton.Visible = false;
+                verifyButton.Enabled = false;
+                helperProgress.Style = ProgressBarStyle.Continuous;
+                helperProgress.Value = 0;
+                statusLabel.Text = "Verification browser failed: " + GetUsefulMessage(ex);
+                startButton.Enabled = true;
+                button2.Enabled = true;
+                MessageBox.Show(this, statusLabel.Text, "Copy From", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -270,73 +332,19 @@ namespace PS3TrophyIsGood
 
         private async Task<List<Pair>> FetchTrophiesAsync(string targetUrl)
         {
-            string jsonPayload = JsonSerializer.Serialize(new
-            {
-                cmd = "request.get",
-                url = targetUrl,
-                maxTimeout = 60000
-            });
+            FlareSolverrManager.PageResult page = await helper.RequestPageAsync(targetUrl);
+            return ParseTrophyPage(page);
+        }
 
-            string response;
-            trophyClient = new WebClient();
-            trophyClient.Headers.Add(HttpRequestHeader.ContentType, "application/json");
-            try
-            {
-                response = await trophyClient.UploadStringTaskAsync(
-                    new Uri("http://127.0.0.1:8191/v1"),
-                    "POST",
-                    jsonPayload
-                );
-            }
-            finally
-            {
-                trophyClient.Dispose();
-                trophyClient = null;
-            }
+        private static List<Pair> ParseTrophyPage(FlareSolverrManager.PageResult page)
+        {
+            if (LooksLikeCloudflareChallenge(page.Html))
+                throw new CloudflareChallengeException();
 
-            string html;
-            int httpStatus = 0;
-            using (JsonDocument json = JsonDocument.Parse(response))
-            {
-                JsonElement root = json.RootElement;
-                JsonElement statusElement;
-                if (root.TryGetProperty("status", out statusElement) &&
-                    statusElement.ValueKind == JsonValueKind.String &&
-                    !string.Equals(statusElement.GetString(), "ok", StringComparison.OrdinalIgnoreCase))
-                {
-                    JsonElement messageElement;
-                    string message = root.TryGetProperty("message", out messageElement) && messageElement.ValueKind == JsonValueKind.String
-                        ? messageElement.GetString()
-                        : "unknown FlareSolverr error";
-                    throw new InvalidOperationException("FlareSolverr request failed: " + message);
-                }
-
-                JsonElement solution;
-                JsonElement htmlElement;
-                if (!root.TryGetProperty("solution", out solution) ||
-                    !solution.TryGetProperty("response", out htmlElement) ||
-                    htmlElement.ValueKind != JsonValueKind.String)
-                {
-                    throw new InvalidOperationException("FlareSolverr returned no page HTML.");
-                }
-
-                html = htmlElement.GetString();
-                JsonElement statusCodeElement;
-                if (solution.TryGetProperty("status", out statusCodeElement) && statusCodeElement.ValueKind == JsonValueKind.Number)
-                    statusCodeElement.TryGetInt32(out httpStatus);
-            }
-
-            if (LooksLikeCloudflareChallenge(html))
-            {
-                throw new InvalidOperationException(
-                    "PSN Trophy Leaders returned a Cloudflare human-verification page instead of the trophy page."
-                );
-            }
-
-            List<Pair> trophies = ParseTrophyDates(html);
+            List<Pair> trophies = ParseTrophyDates(page.Html);
             if (trophies.Count == 0)
             {
-                string statusSuffix = httpStatus > 0 ? " (HTTP " + httpStatus + ")" : string.Empty;
+                string statusSuffix = page.HttpStatus > 0 ? " (HTTP " + page.HttpStatus + ")" : string.Empty;
                 throw new InvalidOperationException(
                     "PSN Trophy Leaders returned a page, but no trophy timestamps could be parsed" + statusSuffix + ". The site format may have changed."
                 );
@@ -384,20 +392,75 @@ namespace PS3TrophyIsGood
                    (lower.Contains("just a moment") && lower.Contains("cloudflare"));
         }
 
+        private void ValidateTrophyCount(List<Pair> trophies)
+        {
+            if (ExpectedTrophyCount > 0 && trophies.Count != ExpectedTrophyCount)
+            {
+                throw new InvalidOperationException(
+                    "PSN Trophy Leaders returned " + trophies.Count +
+                    " trophy timestamps, but the local trophy set contains " + ExpectedTrophyCount +
+                    ". The page format or trophy mapping changed. No trophies were modified."
+                );
+            }
+        }
+
+        private void CompleteCopy(List<Pair> trophies)
+        {
+            loadedTrophies.Clear();
+            loadedTrophies.AddRange(trophies);
+            helperProgress.Style = ProgressBarStyle.Continuous;
+            helperProgress.Value = 100;
+            statusLabel.Text = "Loaded " + trophies.Count + " trophy timestamps.";
+            DialogResult = DialogResult.OK;
+        }
+
+        private void ShowVerificationRequired(string targetUrl)
+        {
+            pendingVerificationUrl = targetUrl;
+            helperProgress.Style = ProgressBarStyle.Continuous;
+            helperProgress.Value = 0;
+            statusLabel.Text = "Human verification required. Click Verify in browser, then complete the Cloudflare check in the browser window.";
+            textBox1.Enabled = false;
+            accept.Enabled = false;
+            checkBox1.Enabled = false;
+            startButton.Enabled = false;
+            verifyButton.Visible = true;
+            verifyButton.Enabled = true;
+            button2.Enabled = true;
+        }
+
+        private void SetBusy(string status)
+        {
+            statusLabel.Text = status;
+            textBox1.Enabled = false;
+            accept.Enabled = false;
+            checkBox1.Enabled = false;
+            startButton.Enabled = false;
+            verifyButton.Enabled = false;
+            button2.Enabled = true;
+            helperProgress.Style = ProgressBarStyle.Marquee;
+        }
+
+        private void RestoreReadyControls()
+        {
+            pendingVerificationUrl = null;
+            helperProgress.Style = ProgressBarStyle.Continuous;
+            helperProgress.Value = 0;
+            textBox1.Enabled = true;
+            accept.Enabled = true;
+            checkBox1.Enabled = true;
+            startButton.Enabled = false;
+            verifyButton.Visible = false;
+            verifyButton.Enabled = false;
+            button2.Enabled = true;
+        }
+
         private static string GetUsefulMessage(Exception ex)
         {
             Exception current = ex;
             while (current.InnerException != null)
                 current = current.InnerException;
             return current.Message;
-        }
-
-        private void CancelTrophyRequest()
-        {
-            if (trophyClient == null)
-                return;
-
-            try { trophyClient.CancelAsync(); } catch { }
         }
 
         private void ReleaseHelper()
@@ -447,50 +510,38 @@ namespace PS3TrophyIsGood
                 return;
             }
 
-            accept.Enabled = false;
-            startButton.Enabled = false;
-            textBox1.Enabled = false;
-            checkBox1.Enabled = false;
-            button2.Enabled = false;
-            helperProgress.Style = ProgressBarStyle.Marquee;
-            statusLabel.Text = "Loading trophy page from PSN Trophy Leaders...";
+            string targetUrl = textBox1.Text;
+            SetBusy("Loading trophy page from PSN Trophy Leaders...");
 
             try
             {
-                List<Pair> trophies = await FetchTrophiesAsync(textBox1.Text);
+                List<Pair> trophies = await FetchTrophiesAsync(targetUrl);
                 if (!Visible)
                     return;
 
-                if (ExpectedTrophyCount > 0 && trophies.Count != ExpectedTrophyCount)
-                {
-                    throw new InvalidOperationException(
-                        "PSN Trophy Leaders returned " + trophies.Count +
-                        " trophy timestamps, but the local trophy set contains " + ExpectedTrophyCount +
-                        ". The page format or trophy mapping changed. No trophies were modified."
-                    );
-                }
+                ValidateTrophyCount(trophies);
+                CompleteCopy(trophies);
+            }
+            catch (CloudflareChallengeException)
+            {
+                if (!Visible)
+                    return;
 
-                loadedTrophies.Clear();
-                loadedTrophies.AddRange(trophies);
-                helperProgress.Style = ProgressBarStyle.Continuous;
-                helperProgress.Value = 100;
-                statusLabel.Text = "Loaded " + trophies.Count + " trophy timestamps.";
-                DialogResult = DialogResult.OK;
+                ShowVerificationRequired(targetUrl);
             }
             catch (Exception ex)
             {
                 if (!Visible)
                     return;
 
-                helperProgress.Style = ProgressBarStyle.Continuous;
-                helperProgress.Value = 0;
+                RestoreReadyControls();
                 statusLabel.Text = GetUsefulMessage(ex);
                 MessageBox.Show(this, statusLabel.Text, "Copy From", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                accept.Enabled = true;
-                textBox1.Enabled = true;
-                checkBox1.Enabled = true;
-                button2.Enabled = true;
             }
+        }
+
+        private sealed class CloudflareChallengeException : Exception
+        {
         }
     }
 }
