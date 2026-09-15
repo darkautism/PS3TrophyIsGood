@@ -19,8 +19,18 @@ namespace PS3TrophyIsGood
         private const int VerificationHeight = 288;
         private const int MaxChallengeReloads = 5;
 
+        private static readonly Regex TrophyRowRegex = new Regex(
+            @"<tr\b(?=[^>]*\bclass\s*=\s*[""'][^""']*\btrophyvalue\d+\b[^""']*[""'])[^>]*>(?<body>.*?)</tr>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
+        );
+
+        private static readonly Regex XmbCellRegex = new Regex(
+            @"<td\b(?=[^>]*\bclass\s*=\s*[""'][^""']*\bXMB\b[^""']*[""'])[^>]*>\s*(?<value>\d+)\s*</td>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
+        );
+
         private static readonly Regex DateCellRegex = new Regex(
-            @"<td\b(?=[^>]*\bclass\s*=\s*[""'][^""']*\bdate_earned\b[^""']*[""'])[^>]*>(?<body>.*?)</td>|<div\b(?=[^>]*\bclass\s*=\s*[""'][^""']*\bdate_earned\b[^""']*[""'])[^>]*>(?<body>.*?)</div>",
+            @"<(?<tag>td|div)\b(?=[^>]*\bclass\s*=\s*[""'][^""']*\bdate_earned\b[^""']*[""'])[^>]*>(?<body>.*?)</\k<tag>>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled
         );
 
@@ -311,7 +321,7 @@ namespace PS3TrophyIsGood
             {
                 string statusSuffix = page.HttpStatus > 0 ? " (HTTP " + page.HttpStatus + ")" : string.Empty;
                 throw new InvalidOperationException(
-                    "PSN Trophy Leaders returned a page, but no trophy timestamps could be parsed" + statusSuffix + ". The site format may have changed."
+                    "PSN Trophy Leaders returned a page, but no trophy rows could be parsed" + statusSuffix + ". The site format may have changed."
                 );
             }
 
@@ -321,24 +331,43 @@ namespace PS3TrophyIsGood
         private static List<Pair> ParseTrophyDates(string html)
         {
             List<Pair> trophies = new List<Pair>();
-            MatchCollection cells = DateCellRegex.Matches(html ?? string.Empty);
+            MatchCollection rows = TrophyRowRegex.Matches(html ?? string.Empty);
 
-            for (int i = 0; i < cells.Count; i++)
+            for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
             {
-                Match cell = cells[i];
-                Match timestamp = SortValueRegex.Match(cell.Groups["body"].Value);
-                if (!timestamp.Success)
-                    timestamp = SortAttributeRegex.Match(cell.Value);
+                string rowBody = rows[rowIndex].Groups["body"].Value;
 
-                long value;
-                if (!timestamp.Success || !long.TryParse(timestamp.Groups["value"].Value, out value))
+                Match idMatch = XmbCellRegex.Match(rowBody);
+                if (!idMatch.Success || !int.TryParse(idMatch.Groups["value"].Value, out int trophyId))
                 {
                     throw new InvalidOperationException(
-                        "PSN Trophy Leaders trophy row " + (i + 1) + " no longer contains the expected earned timestamp. The site format changed."
+                        "PSN Trophy Leaders trophy row " + (rowIndex + 1) +
+                        " no longer contains a valid XMB trophy ID. No trophies were modified."
                     );
                 }
 
-                trophies.Add(new Pair(i, value));
+                Match dateCell = DateCellRegex.Match(rowBody);
+                if (!dateCell.Success)
+                {
+                    throw new InvalidOperationException(
+                        "PSN Trophy Leaders trophy ID " + trophyId +
+                        " no longer contains the earned-date cell. No trophies were modified."
+                    );
+                }
+
+                Match timestamp = SortValueRegex.Match(dateCell.Groups["body"].Value);
+                if (!timestamp.Success)
+                    timestamp = SortAttributeRegex.Match(dateCell.Value);
+
+                if (!timestamp.Success || !long.TryParse(timestamp.Groups["value"].Value, out long value))
+                {
+                    throw new InvalidOperationException(
+                        "PSN Trophy Leaders trophy ID " + trophyId +
+                        " no longer contains a valid earned timestamp. No trophies were modified."
+                    );
+                }
+
+                trophies.Add(new Pair(trophyId, value));
             }
 
             return trophies;
@@ -360,13 +389,28 @@ namespace PS3TrophyIsGood
 
         private void ValidateTrophyCount(List<Pair> trophies)
         {
-            if (ExpectedTrophyCount > 0 && trophies.Count != ExpectedTrophyCount)
+            if (ExpectedTrophyCount <= 0)
+                return;
+
+            if (trophies.Count != ExpectedTrophyCount)
             {
                 throw new InvalidOperationException(
                     "PSN Trophy Leaders returned " + trophies.Count +
-                    " trophy timestamps, but the local trophy set contains " + ExpectedTrophyCount +
-                    ". The page format or trophy mapping changed. No trophies were modified."
+                    " trophy rows, but the local trophy set contains " + ExpectedTrophyCount +
+                    ". No trophies were modified."
                 );
+            }
+
+            int[] ids = trophies.Select(t => t.Id).OrderBy(id => id).ToArray();
+            for (int expectedId = 0; expectedId < ExpectedTrophyCount; expectedId++)
+            {
+                if (ids[expectedId] != expectedId)
+                {
+                    throw new InvalidOperationException(
+                        "PSN Trophy Leaders trophy IDs no longer match the local set (expected XMB IDs 0-" +
+                        (ExpectedTrophyCount - 1) + "). No trophies were modified."
+                    );
+                }
             }
         }
 
@@ -626,7 +670,7 @@ namespace PS3TrophyIsGood
                     }
 
                     throw new InvalidOperationException(
-                        "Cloudflare verification passed, but no trophy timestamps were found. The site format may have changed."
+                        "Cloudflare verification passed, but no trophy rows were found. The site format may have changed."
                     );
                 }
 
