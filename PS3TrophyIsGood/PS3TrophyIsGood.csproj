@@ -66,6 +66,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -88,6 +90,7 @@
     <Compile Include="DateTimePickForm.designer.cs">
       <DependentUpon>DateTimePickForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="FlareSolverrManager.cs" />
     <Compile Include="MainAPP.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -209,7 +212,7 @@
     </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
       <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <ProductName>Microsoft .NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
