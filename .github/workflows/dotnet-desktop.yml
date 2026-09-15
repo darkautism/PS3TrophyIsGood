@@ -5,6 +5,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -37,10 +38,42 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
 
-    - name: Download flaresolverr.exe and unzip
+    - name: Download latest FlareSolverr and verify checksum
+      shell: pwsh
       run: |
-        Invoke-WebRequest -Uri https://github.com/FlareSolverr/FlareSolverr/releases/download/v3.4.4/flaresolverr_windows_x64.zip -OutFile flaresolverr_windows_x64.zip
-        Expand-Archive -Path flaresolverr_windows_x64.zip -DestinationPath PS3TrophyIsGood/bin/Release
+        $ErrorActionPreference = 'Stop'
+        $headers = @{ 'User-Agent' = 'PS3TrophyIsGood-build' }
+        $release = Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/FlareSolverr/FlareSolverr/releases/latest'
+        $asset = $release.assets | Where-Object { $_.name -eq 'flaresolverr_windows_x64.zip' } | Select-Object -First 1
+
+        if (-not $asset) {
+          throw "FlareSolverr release $($release.tag_name) does not contain flaresolverr_windows_x64.zip"
+        }
+
+        $archive = Join-Path $env:RUNNER_TEMP 'flaresolverr_windows_x64.zip'
+        Invoke-WebRequest -Headers $headers -Uri $asset.browser_download_url -OutFile $archive
+
+        if ($asset.digest -and $asset.digest.StartsWith('sha256:')) {
+          $expected = $asset.digest.Substring('sha256:'.Length).ToLowerInvariant()
+          $actual = (Get-FileHash -Algorithm SHA256 -Path $archive).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) {
+            throw "FlareSolverr checksum mismatch. Expected $expected, got $actual"
+          }
+        }
+        else {
+          Write-Warning 'FlareSolverr release did not publish a SHA-256 digest; continuing without checksum verification.'
+        }
+
+        $destination = 'PS3TrophyIsGood/bin/Release'
+        Expand-Archive -Path $archive -DestinationPath $destination -Force
+
+        $solverExe = Join-Path $destination 'flaresolverr/flaresolverr.exe'
+        if (-not (Test-Path $solverExe)) {
+          throw "FlareSolverr archive layout changed: $solverExe was not found"
+        }
+
+        Set-Content -Path (Join-Path $destination 'flaresolverr/flaresolverr.version') -Value $release.tag_name -NoNewline
+        Write-Host "Bundled FlareSolverr $($release.tag_name)"
 
     - name: Upload files
       uses: actions/upload-artifact@v4
