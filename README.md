@@ -55,6 +55,11 @@ If Cloudflare requires human verification, complete the embedded verification pr
 
 ## Change Log：
 
+	v1.3.11
+	- Add PSNProfiles as a Copy From source.
+	- Map remote trophies to local TROPCONF identities instead of relying on website trophy IDs or row positions.
+	- Support partial matches for DLC/edition differences: source-only trophies are ignored and local-only trophies are preserved.
+
 	v1.3.10
 	- FlareSolverr is now downloaded and managed automatically by Copy From instead of bundled with the app.
 	- Add embedded Cloudflare human verification fallback.
