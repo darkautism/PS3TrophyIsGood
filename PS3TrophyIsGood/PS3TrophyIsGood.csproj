@@ -81,6 +81,7 @@
     <Compile Include="CopyFrom.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="CopyFrom.PSNProfiles.cs" />
     <Compile Include="CopyFrom.Designer.cs">
       <DependentUpon>CopyFrom.cs</DependentUpon>
     </Compile>
@@ -196,7 +197,7 @@
       <Name>BigEndianTool</Name>
     </ProjectReference>
     <ProjectReference Include="..\ListViewEx\ListViewEx.csproj">
-      <Project>{35a5c415-0906-4ac7-b0f6-fe3cca884ad9}</Project>
+      <Project>{35a5c415-0907-467b-9f57-099bb34fbf2b}</Project>
       <Name>ListViewEx</Name>
     </ProjectReference>
     <ProjectReference Include="..\TROPHYParser\TROPHYParser\TROPHYParser.csproj">
