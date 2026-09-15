@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -13,7 +12,6 @@ namespace PS3TrophyIsGood
     public partial class MainAPP : Form
     {
         private const long MINIMUM_POSSIBLE_DATE = 633347424000000000;
-        private Process process;
         TROPCONF tconf;
         TROPTRNS tpsn;
         TROPUSR tusr;
@@ -63,33 +61,6 @@ namespace PS3TrophyIsGood
             toolStripComboBox2.SelectedIndex = 0;
             dateTimePicker1.CustomFormat = Properties.strings.DateFormatString;
             copyFrom = new CopyFrom();
-            // 啟用proxy
-            process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "flaresolverr/flaresolverr.exe",
-                    WorkingDirectory = "flaresolverr",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                },
-            };
-            process.OutputDataReceived += (sender, e) =>
-            {
-                if (e.Data != null)
-                {
-                    Console.WriteLine(e.Data);
-                    if (e.Data.Contains("Serving on"))
-                    {
-                        Utility.servingReady.Set(); // 觸發事件，表示已準備好
-                    }
-                }
-            };
-
-            process.Start();
-            process.BeginOutputReadLine();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -101,7 +72,6 @@ namespace PS3TrophyIsGood
         private void 關閉ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CloseFile();
-            process.Kill();
             Application.Exit();
 
         }
@@ -566,8 +536,6 @@ namespace PS3TrophyIsGood
             {
                 e.Cancel = !CloseFile();
             }
-            
-            process.Kill();
         }
 
         private void 瞬間白金ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -643,9 +611,21 @@ namespace PS3TrophyIsGood
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
+            copyFrom.ExpectedTrophyCount = tusr.trophyTimeInfoTable.Count;
             if (copyFrom.ShowDialog(this) == DialogResult.OK)
             {
                 var _times = copyFrom.checkBox1.Checked ? copyFrom.smartCopy().ToList() : copyFrom.copyFrom().ToList();
+                if (_times.Count != tusr.trophyTimeInfoTable.Count)
+                {
+                    MessageBox.Show(
+                        "The copied trophy count no longer matches the local trophy set. No trophies were modified.",
+                        "Copy From",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                    return;
+                }
+
                 if (_times.Any()) 清除獎杯ToolStripMenuItem_Click(sender, e); // no idea why but sometimes it get bug and it don't update, so lockin first fix it
                 try
                 {
@@ -661,6 +641,7 @@ namespace PS3TrophyIsGood
                     }
                     haveBeenEdited = true;
                     RefreshComponents();
+                    MessageBox.Show(Properties.strings.CopiedSuccessfully);
                 }
                 catch (Exception ex)
                 {
