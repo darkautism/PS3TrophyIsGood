@@ -1,6 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project
+  ToolsVersion="12.0"
+  DefaultTargets="Build"
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003"
+>
+  <Import
+    Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+    Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"
+  />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -50,8 +57,12 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup><ApplicationIcon>orignal.ico</ApplicationIcon></PropertyGroup>
-  <PropertyGroup><RuntimeIdentifiers>win</RuntimeIdentifiers></PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>orignal.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RuntimeIdentifiers>win</RuntimeIdentifiers>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -67,65 +78,185 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CopyFrom.cs"><SubType>Form</SubType></Compile>
-    <Compile Include="CopyFrom.Designer.cs"><DependentUpon>CopyFrom.cs</DependentUpon></Compile>
-    <Compile Include="DateTimePickForm.cs"><SubType>Form</SubType></Compile>
-    <Compile Include="DateTimePickForm.designer.cs"><DependentUpon>DateTimePickForm.cs</DependentUpon></Compile>
+    <Compile Include="CopyFrom.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CopyFrom.Designer.cs">
+      <DependentUpon>CopyFrom.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DateTimePickForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DateTimePickForm.designer.cs">
+      <DependentUpon>DateTimePickForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="FlareSolverrManager.cs" />
-    <Compile Include="MainAPP.cs"><SubType>Form</SubType></Compile>
-    <Compile Include="MainAPP.Designer.cs"><DependentUpon>MainAPP.cs</DependentUpon></Compile>
+    <Compile Include="MainAPP.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainAPP.Designer.cs">
+      <DependentUpon>MainAPP.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\strings.pt-BR.Designer.cs"><DependentUpon>strings.pt-BR.resx</DependentUpon><AutoGen>True</AutoGen><DesignTime>True</DesignTime></Compile>
-    <Compile Include="Properties\strings.Designer.cs"><AutoGen>True</AutoGen><DesignTime>True</DesignTime><DependentUpon>strings.resx</DependentUpon></Compile>
-    <Compile Include="Resource1.Designer.cs"><AutoGen>True</AutoGen><DesignTime>True</DesignTime><DependentUpon>Resource1.resx</DependentUpon></Compile>
+    <Compile Include="Properties\strings.pt-BR.Designer.cs">
+      <DependentUpon>strings.pt-BR.resx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Properties\strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Resource1.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resource1.resx</DependentUpon>
+    </Compile>
     <Compile Include="Utility.cs" />
-    <EmbeddedResource Include="CopyFrom.pt-BR.resx"><DependentUpon>CopyFrom.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="CopyFrom.zh-Hant.resx"><DependentUpon>CopyFrom.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="CopyFrom.resx"><DependentUpon>CopyFrom.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="DateTimePickForm.pt-BR.resx"><DependentUpon>DateTimePickForm.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="DateTimePickForm.resx"><DependentUpon>DateTimePickForm.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="DateTimePickForm.zh-Hant.resx"><DependentUpon>DateTimePickForm.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="MainAPP.pt-BR.resx"><DependentUpon>MainAPP.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="MainAPP.resx"><DependentUpon>MainAPP.cs</DependentUpon><SubType>Designer</SubType></EmbeddedResource>
-    <EmbeddedResource Include="MainAPP.zh-Hant.resx"><DependentUpon>MainAPP.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Include="Properties\strings.pt-BR.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>strings.pt-BR.Designer.cs</LastGenOutput></EmbeddedResource>
-    <EmbeddedResource Include="Properties\strings.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>strings.Designer.cs</LastGenOutput></EmbeddedResource>
-    <EmbeddedResource Include="Properties\strings.zh-Hant.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>strings.zh-Hant.Designer.cs</LastGenOutput></EmbeddedResource>
-    <EmbeddedResource Include="Resource1.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resource1.Designer.cs</LastGenOutput></EmbeddedResource>
-    <None Include="pfdtool\games.conf"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
-    <None Include="pfdtool\global.conf"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
-    <None Include="Properties\Settings.settings"><Generator>SettingsSingleFileGenerator</Generator><LastGenOutput>Settings.Designer.cs</LastGenOutput></None>
-    <Compile Include="Properties\Settings.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Settings.settings</DependentUpon><DesignTimeSharedInput>True</DesignTimeSharedInput></Compile>
+    <EmbeddedResource Include="CopyFrom.pt-BR.resx">
+      <DependentUpon>CopyFrom.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CopyFrom.zh-Hant.resx">
+      <DependentUpon>CopyFrom.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CopyFrom.resx">
+      <DependentUpon>CopyFrom.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DateTimePickForm.pt-BR.resx">
+      <DependentUpon>DateTimePickForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DateTimePickForm.resx">
+      <DependentUpon>DateTimePickForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DateTimePickForm.zh-Hant.resx">
+      <DependentUpon>DateTimePickForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainAPP.pt-BR.resx">
+      <DependentUpon>MainAPP.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainAPP.resx">
+      <DependentUpon>MainAPP.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainAPP.zh-Hant.resx">
+      <DependentUpon>MainAPP.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\strings.pt-BR.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>strings.pt-BR.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\strings.zh-Hant.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>strings.zh-Hant.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resource1.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource1.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <None Include="pfdtool\games.conf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="pfdtool\global.conf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
   </ItemGroup>
-  <ItemGroup><None Include="App.config" /></ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="orignal.ico" />
-    <Content Include="pfdtool\msvcr100.dll"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
-    <Content Include="pfdtool\pfdtool.exe"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
-  </ItemGroup>
-  <ItemGroup><Folder Include="TROPHYParser\" /></ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\BigEndianTool\BigEndianTool\BigEndianTool.csproj"><Project>{a57cee20-8097-467b-9f57-099bb34fbf2b}</Project><Name>BigEndianTool</Name></ProjectReference>
-    <ProjectReference Include="..\ListViewEx\ListViewEx.csproj"><Project>{35a5c415-0906-4ac7-b0f6-fe3cca884ad9}</Project><Name>ListViewEx</Name></ProjectReference>
-    <ProjectReference Include="..\TROPHYParser\TROPHYParser\TROPHYParser.csproj"><Project>{81e49c92-d07a-4ad0-8ee0-5c520d4e1c04}</Project><Name>TROPHYParser</Name></ProjectReference>
+    <Content Include="pfdtool\msvcr100.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="pfdtool\pfdtool.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.8"><Visible>False</Visible><ProductName>Microsoft .NET Framework 4.8 %28x86 和 x64%29</ProductName><Install>true</Install></BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1"><Visible>False</Visible><ProductName>.NET Framework 3.5 SP1</ProductName><Install>false</Install></BootstrapperPackage>
+    <Folder Include="TROPHYParser\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces"><Version>10.0.0-rc.2.25502.107</Version></PackageReference>
-    <PackageReference Include="Microsoft.Web.WebView2"><Version>1.0.4191.47</Version></PackageReference>
-    <PackageReference Include="System.Buffers"><Version>4.6.1</Version></PackageReference>
-    <PackageReference Include="System.IO.Pipelines"><Version>10.0.0-rc.2.25502.107</Version></PackageReference>
-    <PackageReference Include="System.Memory"><Version>4.6.3</Version></PackageReference>
-    <PackageReference Include="System.Numerics.Vectors"><Version>4.6.1</Version></PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe"><Version>6.1.2</Version></PackageReference>
-    <PackageReference Include="System.Text.Encodings.Web"><Version>10.0.0-rc.2.25502.107</Version></PackageReference>
-    <PackageReference Include="System.Text.Json"><Version>10.0.0-rc.2.25502.107</Version></PackageReference>
-    <PackageReference Include="System.Threading.Tasks.Extensions"><Version>4.6.3</Version></PackageReference>
-    <PackageReference Include="System.ValueTuple"><Version>4.6.1</Version></PackageReference>
+    <ProjectReference Include="..\BigEndianTool\BigEndianTool\BigEndianTool.csproj">
+      <Project>{a57cee20-8097-467b-9f57-099bb34fbf2b}</Project>
+      <Name>BigEndianTool</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ListViewEx\ListViewEx.csproj">
+      <Project>{35a5c415-0906-4ac7-b0f6-fe3cca884ad9}</Project>
+      <Name>ListViewEx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TROPHYParser\TROPHYParser\TROPHYParser.csproj">
+      <Project>{81e49c92-d07a-4ad0-8ee0-5c520d4e1c04}</Project>
+      <Name>TROPHYParser</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.8">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.8 %28x86 和 x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
+      <Version>10.0.0-rc.2.25502.107</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Web.WebView2">
+      <Version>1.0.4191.47</Version>
+    </PackageReference>
+    <PackageReference Include="System.Buffers">
+      <Version>4.6.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.IO.Pipelines">
+      <Version>10.0.0-rc.2.25502.107</Version>
+    </PackageReference>
+    <PackageReference Include="System.Memory">
+      <Version>4.6.3</Version>
+    </PackageReference>
+    <PackageReference Include="System.Numerics.Vectors">
+      <Version>4.6.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>6.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Encodings.Web">
+      <Version>10.0.0-rc.2.25502.107</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <Version>10.0.0-rc.2.25502.107</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.Tasks.Extensions">
+      <Version>4.6.3</Version>
+    </PackageReference>
+    <PackageReference Include="System.ValueTuple">
+      <Version>4.6.1</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
 </Project>
