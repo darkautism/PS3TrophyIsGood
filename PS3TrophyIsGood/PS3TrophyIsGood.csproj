@@ -82,6 +82,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="CopyFrom.PSNProfiles.cs" />
+    <Compile Include="CopyFrom.IdentityMapping.cs" />
     <Compile Include="CopyFrom.Designer.cs">
       <DependentUpon>CopyFrom.cs</DependentUpon>
     </Compile>
@@ -95,6 +96,7 @@
     <Compile Include="MainAPP.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="MainAPP.CopyFromIdentity.cs" />
     <Compile Include="MainAPP.Designer.cs">
       <DependentUpon>MainAPP.cs</DependentUpon>
     </Compile>
