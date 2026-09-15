@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -15,7 +13,7 @@ namespace PS3TrophyIsGood
 {
     internal sealed class FlareSolverrManager : IDisposable
     {
-        private const string DefaultApiUrl = "http://127.0.0.1:8191/v1";
+        private const string ApiUrl = "http://127.0.0.1:8191/v1";
         private const string LatestReleaseUrl = "https://api.github.com/repos/FlareSolverr/FlareSolverr/releases/latest";
         private const string WindowsAssetName = "flaresolverr_windows_x64.zip";
 
@@ -24,9 +22,6 @@ namespace PS3TrophyIsGood
         private WebClient releaseClient;
         private WebClient downloadClient;
         private WebClient requestClient;
-        private string activeApiUrl = DefaultApiUrl;
-        private string ownedExecutable;
-        private string ownedVersion;
         private bool disposed;
 
         public event Action<string> StatusChanged;
@@ -47,11 +42,10 @@ namespace PS3TrophyIsGood
         public async Task EnsureReadyAsync()
         {
             ThrowIfDisposed();
-            activeApiUrl = DefaultApiUrl;
             SetProgress(0);
             SetStatus("Checking for an existing FlareSolverr...");
 
-            string externalVersion = await ProbeAsync(DefaultApiUrl);
+            string externalVersion = await ProbeAsync();
             ThrowIfDisposed();
             if (externalVersion != null)
             {
@@ -97,16 +91,15 @@ namespace PS3TrophyIsGood
                             throw new InvalidOperationException("Unable to download FlareSolverr and no cached version is available.", downloadError);
 
                         SetStatus("Update failed. Starting the last cached FlareSolverr...");
-                        string fallbackVersion = GetCachedVersionName(fallback);
-                        await StartOwnedProcessAsync(fallback, fallbackVersion, true, 8191);
-                        CleanupCache(fallbackVersion);
+                        await StartOwnedProcessAsync(fallback, GetCachedVersionName(fallback));
+                        CleanupCache(GetCachedVersionName(fallback));
                         return;
                     }
                 }
 
                 try
                 {
-                    await StartOwnedProcessAsync(executable, release.TagName, true, 8191);
+                    await StartOwnedProcessAsync(executable, release.TagName);
                     CleanupCache(release.TagName);
                     return;
                 }
@@ -119,9 +112,8 @@ namespace PS3TrophyIsGood
                         throw new InvalidOperationException("The latest FlareSolverr was installed but did not become ready.", startError);
 
                     SetStatus("Latest version did not start. Rolling back to the previous cached version...");
-                    string fallbackVersion = GetCachedVersionName(fallback);
-                    await StartOwnedProcessAsync(fallback, fallbackVersion, true, 8191);
-                    CleanupCache(fallbackVersion);
+                    await StartOwnedProcessAsync(fallback, GetCachedVersionName(fallback));
+                    CleanupCache(GetCachedVersionName(fallback));
                     return;
                 }
             }
@@ -130,102 +122,22 @@ namespace PS3TrophyIsGood
             if (cachedExecutable == null)
                 throw new InvalidOperationException("Could not check the latest FlareSolverr version and no cached version is available.", releaseError);
 
-            string cachedVersion = GetCachedVersionName(cachedExecutable);
             SetStatus("Version check failed. Starting cached FlareSolverr...");
-            await StartOwnedProcessAsync(cachedExecutable, cachedVersion, true, 8191);
-            CleanupCache(cachedVersion);
+            await StartOwnedProcessAsync(cachedExecutable, GetCachedVersionName(cachedExecutable));
+            CleanupCache(GetCachedVersionName(cachedExecutable));
         }
 
         public async Task<PageResult> RequestPageAsync(string targetUrl)
         {
             ThrowIfDisposed();
-            return await RequestPageCoreAsync(targetUrl, 60000, null);
-        }
-
-        public async Task<PageResult> RequestPageWithInteractiveVerificationAsync(string targetUrl)
-        {
-            ThrowIfDisposed();
-            SetProgress(0);
-            SetStatus("Preparing a verification browser...");
-
-            LocalInstall install = await GetLocalInstallAsync();
-            ThrowIfDisposed();
-
-            int port = GetFreeTcpPort();
-            try
+            string payload = JsonSerializer.Serialize(new
             {
-                await StartOwnedProcessAsync(install.Executable, install.Version, false, port);
-                ThrowIfDisposed();
+                cmd = "request.get",
+                url = targetUrl,
+                maxTimeout = 60000
+            });
 
-                string sessionId = "ps3trophy-" + Guid.NewGuid().ToString("N");
-                await CreateSessionAsync(sessionId);
-                ThrowIfDisposed();
-
-                SetStatus("Browser opened. Complete Cloudflare verification in the browser...");
-                PageResult result = await RequestPageCoreAsync(targetUrl, 300000, sessionId);
-                ThrowIfDisposed();
-                SetStatus("Verification browser returned the page.");
-                return result;
-            }
-            catch
-            {
-                StopOwnedProcess();
-                throw;
-            }
-        }
-
-        private async Task<LocalInstall> GetLocalInstallAsync()
-        {
-            ThrowIfDisposed();
-
-            if (!string.IsNullOrEmpty(ownedExecutable) && File.Exists(ownedExecutable))
-                return new LocalInstall(ownedExecutable, ownedVersion ?? Version ?? "cached");
-
-            Directory.CreateDirectory(cacheRoot);
-            ReleaseInfo release = null;
-            Exception releaseError = null;
-            try
-            {
-                SetStatus("Checking FlareSolverr for the verification browser...");
-                release = await GetLatestReleaseAsync();
-            }
-            catch (Exception ex)
-            {
-                releaseError = ex;
-            }
-
-            ThrowIfDisposed();
-            if (release != null)
-            {
-                string versionDirectory = GetVersionDirectory(release.TagName);
-                string executable = FindExecutable(versionDirectory);
-                if (executable == null)
-                {
-                    await DownloadAndInstallAsync(release, versionDirectory);
-                    ThrowIfDisposed();
-                    executable = FindExecutable(versionDirectory);
-                }
-
-                if (executable != null)
-                    return new LocalInstall(executable, release.TagName);
-            }
-
-            string cached = FindNewestCachedExecutable(null);
-            if (cached != null)
-                return new LocalInstall(cached, GetCachedVersionName(cached));
-
-            throw new InvalidOperationException("A local FlareSolverr build is required for browser verification, but none is available.", releaseError);
-        }
-
-        private async Task<PageResult> RequestPageCoreAsync(string targetUrl, int maxTimeout, string sessionId)
-        {
-            ThrowIfDisposed();
-
-            object payload = sessionId == null
-                ? (object)new { cmd = "request.get", url = targetUrl, maxTimeout = maxTimeout }
-                : new { cmd = "request.get", url = targetUrl, session = sessionId, maxTimeout = maxTimeout };
-
-            string response = await PostJsonAsync(JsonSerializer.Serialize(payload));
+            string response = await PostJsonAsync(payload);
             ThrowIfDisposed();
 
             using (JsonDocument json = JsonDocument.Parse(response))
@@ -251,22 +163,6 @@ namespace PS3TrophyIsGood
             }
         }
 
-        private async Task CreateSessionAsync(string sessionId)
-        {
-            string payload = JsonSerializer.Serialize(new
-            {
-                cmd = "sessions.create",
-                session = sessionId
-            });
-
-            string response = await PostJsonAsync(payload);
-            ThrowIfDisposed();
-            using (JsonDocument json = JsonDocument.Parse(response))
-            {
-                EnsureOkResponse(json.RootElement, "FlareSolverr could not create a browser session");
-            }
-        }
-
         private async Task<string> PostJsonAsync(string payload)
         {
             ThrowIfDisposed();
@@ -275,7 +171,7 @@ namespace PS3TrophyIsGood
             try
             {
                 return await requestClient.UploadStringTaskAsync(
-                    new Uri(activeApiUrl),
+                    new Uri(ApiUrl),
                     "POST",
                     payload
                 );
@@ -411,16 +307,11 @@ namespace PS3TrophyIsGood
                 throw new InvalidOperationException("FlareSolverr SHA-256 checksum mismatch.");
         }
 
-        private async Task StartOwnedProcessAsync(string executable, string version, bool headless, int port)
+        private async Task StartOwnedProcessAsync(string executable, string version)
         {
             ThrowIfDisposed();
             StopOwnedProcess();
-            activeApiUrl = BuildApiUrl(port);
-            ownedExecutable = executable;
-            ownedVersion = version;
-            SetStatus(headless
-                ? "Starting FlareSolverr " + version + "..."
-                : "Starting visible FlareSolverr browser " + version + "...");
+            SetStatus("Starting FlareSolverr " + version + "...");
             SetProgress(0);
 
             Process process = new Process();
@@ -433,9 +324,6 @@ namespace PS3TrophyIsGood
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
-            process.StartInfo.EnvironmentVariables["HEADLESS"] = headless ? "true" : "false";
-            process.StartInfo.EnvironmentVariables["HOST"] = "127.0.0.1";
-            process.StartInfo.EnvironmentVariables["PORT"] = port.ToString(CultureInfo.InvariantCulture);
             process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e)
             {
                 if (e.Data != null)
@@ -464,7 +352,7 @@ namespace PS3TrophyIsGood
                     if (ownedProcess == null || ownedProcess.HasExited)
                         throw new InvalidOperationException("FlareSolverr exited before it became ready.");
 
-                    string detectedVersion = await ProbeAsync(activeApiUrl);
+                    string detectedVersion = await ProbeAsync();
                     ThrowIfDisposed();
                     if (detectedVersion != null)
                     {
@@ -488,7 +376,7 @@ namespace PS3TrophyIsGood
             }
         }
 
-        private async Task<string> ProbeAsync(string apiUrl)
+        private async Task<string> ProbeAsync()
         {
             try
             {
@@ -496,7 +384,7 @@ namespace PS3TrophyIsGood
                 {
                     client.Headers.Add(HttpRequestHeader.ContentType, "application/json");
                     string response = await client.UploadStringTaskAsync(
-                        new Uri(apiUrl),
+                        new Uri(ApiUrl),
                         "POST",
                         "{\"cmd\":\"sessions.list\"}"
                     );
@@ -520,25 +408,6 @@ namespace PS3TrophyIsGood
             }
 
             return null;
-        }
-
-        private static string BuildApiUrl(int port)
-        {
-            return "http://127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture) + "/v1";
-        }
-
-        private static int GetFreeTcpPort()
-        {
-            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            try
-            {
-                return ((IPEndPoint)listener.LocalEndpoint).Port;
-            }
-            finally
-            {
-                listener.Stop();
-            }
         }
 
         private string GetVersionDirectory(string version)
@@ -642,29 +511,25 @@ namespace PS3TrophyIsGood
 
         private void StopOwnedProcess()
         {
-            if (ownedProcess != null)
+            if (ownedProcess == null)
+                return;
+
+            try
             {
-                try
+                if (!ownedProcess.HasExited)
                 {
-                    if (!ownedProcess.HasExited)
-                    {
-                        ownedProcess.Kill();
-                        ownedProcess.WaitForExit(2000);
-                    }
-                }
-                catch
-                {
-                }
-                finally
-                {
-                    ownedProcess.Dispose();
-                    ownedProcess = null;
+                    ownedProcess.Kill();
+                    ownedProcess.WaitForExit(2000);
                 }
             }
-
-            activeApiUrl = DefaultApiUrl;
-            ownedExecutable = null;
-            ownedVersion = null;
+            catch
+            {
+            }
+            finally
+            {
+                ownedProcess.Dispose();
+                ownedProcess = null;
+            }
         }
 
         private static void SafeDeleteFile(string path)
@@ -727,18 +592,6 @@ namespace PS3TrophyIsGood
             {
                 Html = html;
                 HttpStatus = httpStatus;
-            }
-        }
-
-        private sealed class LocalInstall
-        {
-            public string Executable { get; private set; }
-            public string Version { get; private set; }
-
-            public LocalInstall(string executable, string version)
-            {
-                Executable = executable;
-                Version = version;
             }
         }
 
