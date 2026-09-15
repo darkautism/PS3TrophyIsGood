@@ -33,10 +33,13 @@ After that, you can use visual studio 2019+ to compile this project (with .NET d
 
 ![Download link](https://user-images.githubusercontent.com/3898040/108462066-e8c87e00-72b6-11eb-80e1-1447c9cc2c2a.png)
 
-## 403/500 Error
+## FlareSolverr
 
-If you has 403/500 error, you can update FlareSolverr version from [download](https://github.com/FlareSolverr/FlareSolverr/releases).
-Just replace folder.
+FlareSolverr is downloaded automatically when you use **Copy From**. It is not bundled with the normal PS3TrophyIsGood download.
+
+Press **Start** in the Copy From dialog. PS3TrophyIsGood checks the cached FlareSolverr version, downloads the latest stable Windows x64 release when needed, verifies it, starts it for the dialog, and stops the instance it owns when the dialog closes.
+
+If Cloudflare requires human verification, complete the embedded verification prompt in the Copy From dialog. No manual FlareSolverr installation or folder replacement is required.
 
 
 ## 警告
@@ -51,6 +54,11 @@ Just replace folder.
 
 
 ## Change Log：
+
+	v1.3.10
+	- FlareSolverr is now downloaded and managed automatically by Copy From instead of bundled with the app.
+	- Add embedded Cloudflare human verification fallback.
+	- Update PSN Trophy Leaders parsing to map timestamps by XMB trophy ID.
 
 	v1.3.9
 	- Add a backend FlareSolverr proxy as cloudflare bypass.
