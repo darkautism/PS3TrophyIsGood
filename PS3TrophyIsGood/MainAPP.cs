@@ -536,6 +536,11 @@ namespace PS3TrophyIsGood
             {
                 e.Cancel = !CloseFile();
             }
+
+            if (!e.Cancel)
+            {
+                copyFrom?.ReleaseForShutdown();
+            }
         }
 
         private void 瞬間白金ToolStripMenuItem_Click(object sender, EventArgs e)

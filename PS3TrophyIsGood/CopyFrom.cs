@@ -160,34 +160,47 @@ namespace PS3TrophyIsGood
             if (Visible)
                 ResetDialogState();
             else
-            {
-                StopEmbeddedVerification(true);
-                ReleaseHelper();
-            }
+                StopEmbeddedVerification(false);
         }
 
         private void ResetDialogState()
         {
             StopEmbeddedVerification(true);
-            ReleaseHelper();
             loadedTrophies.Clear();
-            helperReady = false;
-            preparing = false;
             DialogResult = DialogResult.None;
 
             ExitVerificationLayout();
             textBox1.Text = string.Empty;
-            textBox1.Enabled = false;
-            accept.Enabled = false;
-            checkBox1.Checked = false;
-            checkBox1.Enabled = false;
-            groupBox1.Visible = false;
-            startButton.Enabled = true;
             button2.Enabled = true;
             helperProgress.Style = ProgressBarStyle.Continuous;
-            helperProgress.Value = 0;
-            statusLabel.Text = "Helper not started. Nothing will be downloaded until you press Start.";
+
+            if (helperReady)
+            {
+                textBox1.Enabled = true;
+                accept.Enabled = true;
+                checkBox1.Enabled = true;
+                startButton.Enabled = false;
+                helperProgress.Value = 100;
+                statusLabel.Text = "FlareSolverr ready.";
+            }
+            else
+            {
+                textBox1.Enabled = false;
+                accept.Enabled = false;
+                checkBox1.Enabled = false;
+                startButton.Enabled = true;
+                helperProgress.Value = 0;
+                statusLabel.Text = "Helper not started. Nothing will be downloaded until you press Start.";
+            }
+
+            groupBox1.Visible = checkBox1.Checked;
             UpdateDialogHeight();
+        }
+
+        public void ReleaseForShutdown()
+        {
+            StopEmbeddedVerification(true);
+            ReleaseHelper();
         }
 
         private async void startButton_Click(object sender, EventArgs e)
