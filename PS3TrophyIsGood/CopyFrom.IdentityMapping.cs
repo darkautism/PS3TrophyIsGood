@@ -197,7 +197,7 @@ namespace PS3TrophyIsGood
                 return;
             }
 
-            if (!helperReady)
+            if (!await RevalidateHelperAsync())
             {
                 MessageBox.Show(this, "Press Start and wait until FlareSolverr is ready.", "Copy From");
                 return;

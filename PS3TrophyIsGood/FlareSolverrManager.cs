@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -19,6 +20,7 @@ namespace PS3TrophyIsGood
 
         private readonly string cacheRoot;
         private Process ownedProcess;
+        private IntPtr ownedProcessJob = IntPtr.Zero;
         private WebClient releaseClient;
         private WebClient downloadClient;
         private WebClient requestClient;
@@ -29,6 +31,23 @@ namespace PS3TrophyIsGood
 
         public string Version { get; private set; }
         public bool OwnsProcess { get { return ownedProcess != null; } }
+        public bool IsOwnedProcessRunning
+        {
+            get
+            {
+                if (ownedProcess == null)
+                    return false;
+
+                try
+                {
+                    return !ownedProcess.HasExited;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
 
         public FlareSolverrManager()
         {
@@ -125,6 +144,12 @@ namespace PS3TrophyIsGood
             SetStatus("Version check failed. Starting cached FlareSolverr...");
             await StartOwnedProcessAsync(cachedExecutable, GetCachedVersionName(cachedExecutable));
             CleanupCache(GetCachedVersionName(cachedExecutable));
+        }
+
+        public async Task<bool> IsReadyAsync()
+        {
+            ThrowIfDisposed();
+            return await ProbeAsync() != null;
         }
 
         public async Task<PageResult> RequestPageAsync(string targetUrl)
@@ -341,6 +366,7 @@ namespace PS3TrophyIsGood
                     throw new InvalidOperationException("FlareSolverr process could not be started.");
 
                 ownedProcess = process;
+                ownedProcessJob = CreateKillOnCloseJob(process);
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
@@ -512,14 +538,24 @@ namespace PS3TrophyIsGood
         private void StopOwnedProcess()
         {
             if (ownedProcess == null)
+            {
+                CloseOwnedProcessJob();
                 return;
+            }
+
+            Process process = ownedProcess;
+            ownedProcess = null;
 
             try
             {
-                if (!ownedProcess.HasExited)
+                if (ownedProcessJob != IntPtr.Zero)
                 {
-                    ownedProcess.Kill();
-                    ownedProcess.WaitForExit(2000);
+                    CloseOwnedProcessJob();
+                    try { process.WaitForExit(5000); } catch { }
+                }
+                else if (!process.HasExited)
+                {
+                    KillProcessTree(process);
                 }
             }
             catch
@@ -527,10 +563,167 @@ namespace PS3TrophyIsGood
             }
             finally
             {
-                ownedProcess.Dispose();
-                ownedProcess = null;
+                process.Dispose();
             }
         }
+
+        private static IntPtr CreateKillOnCloseJob(Process process)
+        {
+            IntPtr job = CreateJobObject(IntPtr.Zero, null);
+            if (job == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            int length = Marshal.SizeOf(typeof(JobObjectExtendedLimitInformation));
+            IntPtr infoPointer = Marshal.AllocHGlobal(length);
+            try
+            {
+                JobObjectExtendedLimitInformation info = new JobObjectExtendedLimitInformation();
+                info.BasicLimitInformation.LimitFlags = JobObjectLimitKillOnJobClose;
+                Marshal.StructureToPtr(info, infoPointer, false);
+
+                if (!SetInformationJobObject(
+                        job,
+                        JobObjectInfoType.ExtendedLimitInformation,
+                        infoPointer,
+                        (uint)length) ||
+                    !AssignProcessToJobObject(job, process.Handle))
+                {
+                    CloseHandle(job);
+                    return IntPtr.Zero;
+                }
+
+                return job;
+            }
+            catch
+            {
+                CloseHandle(job);
+                return IntPtr.Zero;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(infoPointer);
+            }
+        }
+
+        private void CloseOwnedProcessJob()
+        {
+            if (ownedProcessJob == IntPtr.Zero)
+                return;
+
+            try
+            {
+                CloseHandle(ownedProcessJob);
+            }
+            catch
+            {
+            }
+            finally
+            {
+                ownedProcessJob = IntPtr.Zero;
+            }
+        }
+
+        private static void KillProcessTree(Process process)
+        {
+            if (process == null)
+                return;
+
+            try
+            {
+                int processId = process.Id;
+                if (!process.HasExited)
+                {
+                    ProcessStartInfo taskKillStartInfo = new ProcessStartInfo
+                    {
+                        FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
+                        Arguments = "/PID " + processId + " /T /F",
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using (Process taskKill = Process.Start(taskKillStartInfo))
+                    {
+                        if (taskKill != null)
+                            taskKill.WaitForExit(5000);
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                    process.WaitForExit(2000);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private const uint JobObjectLimitKillOnJobClose = 0x00002000;
+
+        private enum JobObjectInfoType
+        {
+            ExtendedLimitInformation = 9
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JobObjectBasicLimitInformation
+        {
+            public long PerProcessUserTimeLimit;
+            public long PerJobUserTimeLimit;
+            public uint LimitFlags;
+            public UIntPtr MinimumWorkingSetSize;
+            public UIntPtr MaximumWorkingSetSize;
+            public uint ActiveProcessLimit;
+            public UIntPtr Affinity;
+            public uint PriorityClass;
+            public uint SchedulingClass;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IoCounters
+        {
+            public ulong ReadOperationCount;
+            public ulong WriteOperationCount;
+            public ulong OtherOperationCount;
+            public ulong ReadTransferCount;
+            public ulong WriteTransferCount;
+            public ulong OtherTransferCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JobObjectExtendedLimitInformation
+        {
+            public JobObjectBasicLimitInformation BasicLimitInformation;
+            public IoCounters IoInfo;
+            public UIntPtr ProcessMemoryLimit;
+            public UIntPtr JobMemoryLimit;
+            public UIntPtr PeakProcessMemoryUsed;
+            public UIntPtr PeakJobMemoryUsed;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string lpName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetInformationJobObject(
+            IntPtr hJob,
+            JobObjectInfoType jobObjectInfoType,
+            IntPtr lpJobObjectInfo,
+            uint cbJobObjectInfoLength
+        );
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
 
         private static void SafeDeleteFile(string path)
         {

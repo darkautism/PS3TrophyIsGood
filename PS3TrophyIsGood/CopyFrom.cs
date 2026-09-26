@@ -160,34 +160,66 @@ namespace PS3TrophyIsGood
             if (Visible)
                 ResetDialogState();
             else
-            {
                 StopEmbeddedVerification(true);
-                ReleaseHelper();
-            }
         }
 
         private void ResetDialogState()
         {
             StopEmbeddedVerification(true);
-            ReleaseHelper();
             loadedTrophies.Clear();
-            helperReady = false;
-            preparing = false;
             DialogResult = DialogResult.None;
 
             ExitVerificationLayout();
             textBox1.Text = string.Empty;
-            textBox1.Enabled = false;
-            accept.Enabled = false;
-            checkBox1.Checked = false;
-            checkBox1.Enabled = false;
-            groupBox1.Visible = false;
-            startButton.Enabled = true;
             button2.Enabled = true;
             helperProgress.Style = ProgressBarStyle.Continuous;
-            helperProgress.Value = 0;
-            statusLabel.Text = "Helper not started. Nothing will be downloaded until you press Start.";
+
+            if (helperReady && (helper == null || (helper.OwnsProcess && !helper.IsOwnedProcessRunning)))
+                ReleaseHelper();
+
+            if (helperReady)
+            {
+                textBox1.Enabled = true;
+                accept.Enabled = true;
+                checkBox1.Enabled = true;
+                startButton.Enabled = false;
+                helperProgress.Value = 100;
+                statusLabel.Text = "FlareSolverr ready.";
+            }
+            else
+            {
+                textBox1.Enabled = false;
+                accept.Enabled = false;
+                checkBox1.Enabled = false;
+                startButton.Enabled = true;
+                helperProgress.Value = 0;
+                statusLabel.Text = "Helper not started. Nothing will be downloaded until you press Start.";
+            }
+
+            groupBox1.Visible = checkBox1.Checked;
             UpdateDialogHeight();
+        }
+
+        public void ReleaseForShutdown()
+        {
+            StopEmbeddedVerification(true);
+            StopPsnProfilesVerification(true);
+            StopIdentityVerification(true);
+            ReleaseHelper();
+        }
+
+        private async Task<bool> RevalidateHelperAsync()
+        {
+            if (!helperReady || helper == null)
+                return false;
+
+            if (await helper.IsReadyAsync())
+                return true;
+
+            ReleaseHelper();
+            RestoreReadyControls();
+            statusLabel.Text = "FlareSolverr stopped. Press Start to launch it again.";
+            return false;
         }
 
         private async void startButton_Click(object sender, EventArgs e)
@@ -212,10 +244,10 @@ namespace PS3TrophyIsGood
             try
             {
                 await helper.EnsureReadyAsync();
+                helperReady = true;
                 if (!Visible)
                     return;
 
-                helperReady = true;
                 textBox1.Enabled = true;
                 accept.Enabled = true;
                 checkBox1.Enabled = true;
@@ -224,10 +256,13 @@ namespace PS3TrophyIsGood
             }
             catch (Exception ex)
             {
-                if (!Visible)
-                    return;
-
                 helperReady = false;
+                if (!Visible)
+                {
+                    ReleaseHelper();
+                    return;
+                }
+
                 statusLabel.Text = "FlareSolverr unavailable: " + GetUsefulMessage(ex);
                 helperProgress.Style = ProgressBarStyle.Continuous;
                 helperProgress.Value = 0;
@@ -876,6 +911,7 @@ namespace PS3TrophyIsGood
 
         private void ReleaseHelper()
         {
+            helperReady = false;
             if (helper == null)
                 return;
 
@@ -883,7 +919,6 @@ namespace PS3TrophyIsGood
             helper.ProgressChanged -= Helper_ProgressChanged;
             helper.Dispose();
             helper = null;
-            helperReady = false;
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
@@ -905,7 +940,7 @@ namespace PS3TrophyIsGood
 
         private async void accept_Click(object sender, EventArgs e)
         {
-            if (!helperReady)
+            if (!await RevalidateHelperAsync())
             {
                 MessageBox.Show(this, "Press Start and wait until FlareSolverr is ready.", "Copy From");
                 return;
