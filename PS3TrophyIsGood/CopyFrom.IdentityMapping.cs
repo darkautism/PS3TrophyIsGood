@@ -224,7 +224,12 @@ namespace PS3TrophyIsGood
                 if (!Visible)
                     return;
 
-                if (LooksLikeCloudflareChallenge(page.Html))
+                // Accept trophy HTML even when the page includes leftover
+                // Cloudflare/Turnstile scripts or challenge markers.
+                bool pageHasTrophies = source == IdentitySource.PsnProfiles
+                    ? ProfilesLinkIdentityRegex.IsMatch(page.Html ?? string.Empty)
+                    : TrophyRowRegex.IsMatch(page.Html ?? string.Empty);
+                if (!pageHasTrophies && LooksLikeCloudflareChallenge(page.Html))
                 {
                     await ShowIdentityVerificationAsync(targetUrl, source);
                     return;
@@ -686,7 +691,9 @@ namespace PS3TrophyIsGood
                 bool hasTrophies = identityVerificationSource == IdentitySource.PsnProfiles
                     ? ProfilesLinkIdentityRegex.IsMatch(html)
                     : TrophyRowRegex.IsMatch(html);
-                if (!hasTrophies || LooksLikeCloudflareChallenge(html))
+                // Cloudflare scripts may remain in the HTML after verification.
+                // A real trophy row is stronger evidence than CF marker strings.
+                if (!hasTrophies)
                     return false;
 
                 CompleteIdentityPage(html, 200, identityVerificationSource);
@@ -783,7 +790,10 @@ namespace PS3TrophyIsGood
                 );
                 string html = JsonSerializer.Deserialize<string>(htmlJson) ?? string.Empty;
 
-                if (LooksLikeCloudflareChallenge(html))
+                bool trophyContentVisible = identityVerificationSource == IdentitySource.PsnProfiles
+                    ? ProfilesLinkIdentityRegex.IsMatch(html)
+                    : TrophyRowRegex.IsMatch(html);
+                if (!trophyContentVisible && LooksLikeCloudflareChallenge(html))
                 {
                     elapsed = DateTime.UtcNow - detectedAt;
                     if (elapsed < TimeSpan.FromSeconds(15))
