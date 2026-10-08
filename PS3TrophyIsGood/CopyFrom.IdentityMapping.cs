@@ -317,10 +317,23 @@ namespace PS3TrophyIsGood
             int expectedIntersection = Math.Min(remote.Count, localTrophyIdentities.Count);
             if (mapped.Count != expectedIntersection)
             {
+                // Preserve fail-closed behavior and expose mismatched trophy identities.
+                var matchedIds = new HashSet<int>(mapped.Keys);
+                var missingLocal = localTrophyIdentities
+                    .Where(local => !matchedIds.Contains(local.Id))
+                    .Take(8)
+                    .Select(local => "#" + local.Id + " " + local.Name + " [" + local.Type + "]");
+                var unmatchedRemote = remote
+                    .Where(item => !localTrophyIdentities.Any(local =>
+                        NormalizeIdentityText(local.Name) == NormalizeIdentityText(item.Name)))
+                    .Take(8)
+                    .Select(item => "#" + item.RemoteId + " " + item.Name + " [" + item.Type + "]");
                 throw new InvalidOperationException(
                     GetIdentitySourceName(source) + " has " + remote.Count + " trophy rows and the local set has " +
                     localTrophyIdentities.Count + ", but only " + mapped.Count +
-                    " trophies could be matched 1:1 by identity. No trophies were modified."
+                    " trophies could be matched 1:1 by identity. No trophies were modified." +
+                    "\nUnmatched local (up to 8): " + string.Join("; ", missingLocal) +
+                    "\nRemote titles absent locally (up to 8): " + string.Join("; ", unmatchedRemote)
                 );
             }
 
