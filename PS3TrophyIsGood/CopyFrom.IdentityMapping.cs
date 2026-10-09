@@ -224,7 +224,12 @@ namespace PS3TrophyIsGood
                 if (!Visible)
                     return;
 
-                if (LooksLikeCloudflareChallenge(page.Html))
+                // Accept trophy HTML even when the page includes leftover
+                // Cloudflare/Turnstile scripts or challenge markers.
+                bool pageHasTrophies = source == IdentitySource.PsnProfiles
+                    ? ProfilesLinkIdentityRegex.IsMatch(page.Html ?? string.Empty)
+                    : TrophyRowRegex.IsMatch(page.Html ?? string.Empty);
+                if (!pageHasTrophies && LooksLikeCloudflareChallenge(page.Html))
                 {
                     await ShowIdentityVerificationAsync(targetUrl, source);
                     return;
@@ -301,6 +306,18 @@ namespace PS3TrophyIsGood
                         candidates = sameDetail;
                 }
 
+                // Site/local punctuation may differ (e.g. Adrenaline-Junkie vs
+                // Adrenaline Junkie). Only fall back when exact identity failed.
+                // Require a known, matching type and a unique candidate.
+                if (candidates.Count == 0 && !string.IsNullOrEmpty(remoteType))
+                {
+                    string looseName = NormalizeIdentityPunctuation(item.Name);
+                    candidates = localTrophyIdentities
+                        .Where(local => NormalizeTrophyType(local.Type) == remoteType &&
+                            NormalizeIdentityPunctuation(local.Name) == looseName)
+                        .ToList();
+                }
+
                 if (candidates.Count == 0)
                     continue;
 
@@ -317,10 +334,23 @@ namespace PS3TrophyIsGood
             int expectedIntersection = Math.Min(remote.Count, localTrophyIdentities.Count);
             if (mapped.Count != expectedIntersection)
             {
+                // Preserve fail-closed behavior and expose mismatched trophy identities.
+                var matchedIds = new HashSet<int>(mapped.Keys);
+                var missingLocal = localTrophyIdentities
+                    .Where(local => !matchedIds.Contains(local.Id))
+                    .Take(8)
+                    .Select(local => "#" + local.Id + " " + local.Name + " [" + local.Type + "]");
+                var unmatchedRemote = remote
+                    .Where(item => !localTrophyIdentities.Any(local =>
+                        NormalizeIdentityText(local.Name) == NormalizeIdentityText(item.Name)))
+                    .Take(8)
+                    .Select(item => "#" + item.RemoteId + " " + item.Name + " [" + item.Type + "]");
                 throw new InvalidOperationException(
                     GetIdentitySourceName(source) + " has " + remote.Count + " trophy rows and the local set has " +
                     localTrophyIdentities.Count + ", but only " + mapped.Count +
-                    " trophies could be matched 1:1 by identity. No trophies were modified."
+                    " trophies could be matched 1:1 by identity. No trophies were modified." +
+                    "\nUnmatched local (up to 8): " + string.Join("; ", missingLocal) +
+                    "\nRemote titles absent locally (up to 8): " + string.Join("; ", unmatchedRemote)
                 );
             }
 
@@ -435,6 +465,15 @@ namespace PS3TrophyIsGood
             string decoded = CleanIdentityHtml(value).Normalize(NormalizationForm.FormKC);
             decoded = decoded.Replace('’', '\'').Replace('‘', '\'').Replace('“', '"').Replace('”', '"');
             return Regex.Replace(decoded, "\\s+", " ").Trim().ToLowerInvariant();
+        }
+
+        private static string NormalizeIdentityPunctuation(string value)
+        {
+            string normalized = NormalizeIdentityText(value);
+            // Treat hyphens as word separators; do not strip all punctuation
+            // because that could merge otherwise different trophy identities.
+            normalized = Regex.Replace(normalized, @"[-‐‑‒–—]", " ");
+            return Regex.Replace(normalized, @"\\s+", " ").Trim();
         }
 
         private static string NormalizeIdentityDetail(string value)
@@ -626,6 +665,8 @@ namespace PS3TrophyIsGood
         {
             if (!identityVerificationActive || identityVerificationPaused || !e.IsSuccess)
                 return;
+            if (await TryCompleteVisibleIdentityPageAsync())
+                return;
             if (identityClearanceDetected)
                 await ContinueAfterIdentityClearanceAsync(true);
             else
@@ -634,10 +675,61 @@ namespace PS3TrophyIsGood
 
         private async void identityVerificationTimer_Tick(object sender, EventArgs e)
         {
+            if (await TryCompleteVisibleIdentityPageAsync())
+                return;
             if (identityClearanceDetected)
                 await ContinueAfterIdentityClearanceAsync(false);
             else
                 await CheckForIdentityClearanceAsync();
+        }
+
+        // A verified trophy page may not set cf_clearance (e.g. a reused WebView2
+        // browser profile). Detect the actual target content before waiting for CF.
+        private async Task<bool> TryCompleteVisibleIdentityPageAsync()
+        {
+            if (!identityVerificationActive || identityVerificationPaused || identityFinishing ||
+                identityVerificationWebView == null || identityVerificationWebView.CoreWebView2 == null)
+                return false;
+
+            Uri current;
+            Uri target;
+            if (!Uri.TryCreate(identityVerificationWebView.CoreWebView2.Source, UriKind.Absolute, out current) ||
+                !Uri.TryCreate(identityVerificationTargetUrl, UriKind.Absolute, out target) ||
+                !string.Equals(current.Host, target.Host, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(current.AbsolutePath.TrimEnd('/'), target.AbsolutePath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            identityFinishing = true;
+            try
+            {
+                string json = await identityVerificationWebView.CoreWebView2.ExecuteScriptAsync(
+                    "document.documentElement ? document.documentElement.outerHTML : ''");
+                if (!identityVerificationActive || identityVerificationPaused)
+                    return true;
+
+                string html = JsonSerializer.Deserialize<string>(json) ?? string.Empty;
+                // Do not mistake a challenge or a half-loaded document for trophies.
+                bool hasTrophies = identityVerificationSource == IdentitySource.PsnProfiles
+                    ? ProfilesLinkIdentityRegex.IsMatch(html)
+                    : TrophyRowRegex.IsMatch(html);
+                // Cloudflare scripts may remain in the HTML after verification.
+                // A real trophy row is stronger evidence than CF marker strings.
+                if (!hasTrophies)
+                    return false;
+
+                CompleteIdentityPage(html, 200, identityVerificationSource);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (identityVerificationActive)
+                    HandleIdentityVerificationFailure(ex);
+                return true;
+            }
+            finally
+            {
+                identityFinishing = false;
+            }
         }
 
         private async Task CheckForIdentityClearanceAsync()
@@ -702,7 +794,11 @@ namespace PS3TrophyIsGood
                     elapsed = DateTime.UtcNow - detectedAt;
                 }
 
-                if (!identityPostClearanceNavigateIssued && elapsed >= TimeSpan.FromSeconds(3))
+                // A visible trophy page must be parsed before forcing a new
+                // navigation. Otherwise the redirect can restart CF unnecessarily.
+                if (!identityPostClearanceNavigateIssued && elapsed >= TimeSpan.FromSeconds(3) &&
+                    !string.Equals(new Uri(identityVerificationWebView.CoreWebView2.Source).AbsolutePath.TrimEnd('/'),
+                        new Uri(identityVerificationTargetUrl).AbsolutePath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
                 {
                     identityPostClearanceNavigateIssued = true;
                     statusLabel.Text = "Verification passed. Opening the trophy page...";
@@ -715,7 +811,10 @@ namespace PS3TrophyIsGood
                 );
                 string html = JsonSerializer.Deserialize<string>(htmlJson) ?? string.Empty;
 
-                if (LooksLikeCloudflareChallenge(html))
+                bool trophyContentVisible = identityVerificationSource == IdentitySource.PsnProfiles
+                    ? ProfilesLinkIdentityRegex.IsMatch(html)
+                    : TrophyRowRegex.IsMatch(html);
+                if (!trophyContentVisible && LooksLikeCloudflareChallenge(html))
                 {
                     elapsed = DateTime.UtcNow - detectedAt;
                     if (elapsed < TimeSpan.FromSeconds(15))

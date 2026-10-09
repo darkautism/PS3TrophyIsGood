@@ -191,7 +191,7 @@ namespace PS3TrophyIsGood
         private async Task<string> PostJsonAsync(string payload)
         {
             ThrowIfDisposed();
-            requestClient = new WebClient();
+            requestClient = new TimeoutWebClient();
             requestClient.Headers.Add(HttpRequestHeader.ContentType, "application/json");
             try
             {
@@ -205,6 +205,19 @@ namespace PS3TrophyIsGood
             {
                 requestClient.Dispose();
                 requestClient = null;
+            }
+        }
+
+        // Bound the client socket independently of FlareSolverr's maxTimeout.
+        private sealed class TimeoutWebClient : WebClient
+        {
+            protected override WebRequest GetWebRequest(Uri address)
+            {
+                WebRequest request = base.GetWebRequest(address);
+                request.Timeout = 90000;
+                if (request is HttpWebRequest httpRequest)
+                    httpRequest.ReadWriteTimeout = 90000;
+                return request;
             }
         }
 
