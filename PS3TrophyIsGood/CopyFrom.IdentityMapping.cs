@@ -306,6 +306,18 @@ namespace PS3TrophyIsGood
                         candidates = sameDetail;
                 }
 
+                // Site/local punctuation may differ (e.g. Adrenaline-Junkie vs
+                // Adrenaline Junkie). Only fall back when exact identity failed.
+                // Require a known, matching type and a unique candidate.
+                if (candidates.Count == 0 && !string.IsNullOrEmpty(remoteType))
+                {
+                    string looseName = NormalizeIdentityPunctuation(item.Name);
+                    candidates = localTrophyIdentities
+                        .Where(local => NormalizeTrophyType(local.Type) == remoteType &&
+                            NormalizeIdentityPunctuation(local.Name) == looseName)
+                        .ToList();
+                }
+
                 if (candidates.Count == 0)
                     continue;
 
@@ -453,6 +465,15 @@ namespace PS3TrophyIsGood
             string decoded = CleanIdentityHtml(value).Normalize(NormalizationForm.FormKC);
             decoded = decoded.Replace('’', '\'').Replace('‘', '\'').Replace('“', '"').Replace('”', '"');
             return Regex.Replace(decoded, "\\s+", " ").Trim().ToLowerInvariant();
+        }
+
+        private static string NormalizeIdentityPunctuation(string value)
+        {
+            string normalized = NormalizeIdentityText(value);
+            // Treat hyphens as word separators; do not strip all punctuation
+            // because that could merge otherwise different trophy identities.
+            normalized = Regex.Replace(normalized, @"[-‐‑‒–—]", " ");
+            return Regex.Replace(normalized, @"\\s+", " ").Trim();
         }
 
         private static string NormalizeIdentityDetail(string value)
