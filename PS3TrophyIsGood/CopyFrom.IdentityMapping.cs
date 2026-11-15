@@ -33,6 +33,9 @@ namespace PS3TrophyIsGood
         private sealed class RemoteTrophyIdentity
         {
             public int RemoteId { get; set; }
+            // The PSN Trophy Leaders XMB column exposes the PS3's actual
+            // numeric trophy ID. The page link's ID is not interchangeable.
+            public int? XmbId { get; set; }
             public string Name { get; set; }
             public string Detail { get; set; }
             public string Type { get; set; }
@@ -274,6 +277,14 @@ namespace PS3TrophyIsGood
 
         private List<Pair> MapRemoteToLocal(List<RemoteTrophyIdentity> remote, IdentitySource source)
         {
+            // TROPCONF.SFM is localized: an entire French trophy set may have
+            // different titles AND descriptions from the English website.
+            // PSN Trophy Leaders exposes real XMB IDs. Use those only when the
+            // full set and every trophy grade verify against the local set.
+            List<Pair> verifiedXmbMapping = TryMapCompletePsntlSetByXmbId(remote, source);
+            if (verifiedXmbMapping != null)
+                return verifiedXmbMapping;
+
             Dictionary<int, Pair> mapped = new Dictionary<int, Pair>();
 
             foreach (RemoteTrophyIdentity item in remote)
@@ -375,6 +386,55 @@ namespace PS3TrophyIsGood
             return mapped.Values.OrderBy(pair => pair.Id).ToList();
         }
 
+        private List<Pair> TryMapCompletePsntlSetByXmbId(List<RemoteTrophyIdentity> remote, IdentitySource source)
+        {
+            if (source != IdentitySource.PsnTrophyLeaders ||
+                remote.Count == 0 || remote.Count != localTrophyIdentities.Count ||
+                remote.Any(t => !t.XmbId.HasValue))
+                return null;
+
+            Dictionary<int, LocalTrophyIdentity> locals;
+            try
+            {
+                locals = localTrophyIdentities.ToDictionary(t => t.Id);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+
+            HashSet<int> usedIds = new HashSet<int>();
+            foreach (RemoteTrophyIdentity item in remote)
+            {
+                int xmbId = item.XmbId.Value;
+                if (!usedIds.Add(xmbId) || !locals.TryGetValue(xmbId, out LocalTrophyIdentity local))
+                    return null;
+
+                string remoteType = NormalizeTrophyType(item.Type);
+                string localType = NormalizeTrophyType(local.Type);
+                if (string.IsNullOrEmpty(remoteType) || remoteType != localType)
+                    return null;
+
+                // Independently verify any unambiguous matching titles so
+                // similarly shaped trophy lists cannot silently be misaligned.
+                string title = NormalizeIdentityText(item.Name);
+                if (!string.IsNullOrEmpty(title))
+                {
+                    List<LocalTrophyIdentity> named = localTrophyIdentities
+                        .Where(t => NormalizeTrophyType(t.Type) == remoteType &&
+                            NormalizeIdentityText(t.Name) == title)
+                        .ToList();
+                    if (named.Count == 1 && named[0].Id != xmbId)
+                        return null;
+                }
+            }
+
+            return remote
+                .Select(t => new Pair(t.XmbId.Value, t.Date))
+                .OrderBy(pair => pair.Id)
+                .ToList();
+        }
+
         private static List<RemoteTrophyIdentity> ParsePsntlIdentities(string html, int httpStatus)
         {
             List<RemoteTrophyIdentity> trophies = new List<RemoteTrophyIdentity>();
@@ -400,9 +460,16 @@ namespace PS3TrophyIsGood
                 if (int.TryParse(title.Groups["id"].Value, out int parsedId))
                     remoteId = parsedId;
 
+                int? xmbId = null;
+                Match xmbCell = XmbCellRegex.Match(body);
+                if (xmbCell.Success &&
+                    int.TryParse(xmbCell.Groups["value"].Value, out int parsedXmbId))
+                    xmbId = parsedXmbId;
+
                 trophies.Add(new RemoteTrophyIdentity
                 {
                     RemoteId = remoteId,
+                    XmbId = xmbId,
                     Name = CleanIdentityHtml(title.Groups["value"].Value),
                     Detail = detail.Success ? CleanIdentityHtml(detail.Groups["value"].Value) : string.Empty,
                     Type = type.Success ? PsntlNumericTypeToCode(type.Groups["value"].Value) : string.Empty,
