@@ -287,13 +287,13 @@ namespace PS3TrophyIsGood
                     .ToList();
 
                 string remoteType = NormalizeTrophyType(item.Type);
+                // Trophy grades must agree even when names match. Never
+                // silently fall back to a different grade.
                 if (!string.IsNullOrEmpty(remoteType))
                 {
-                    List<LocalTrophyIdentity> sameType = candidates
+                    candidates = candidates
                         .Where(local => NormalizeTrophyType(local.Type) == remoteType)
                         .ToList();
-                    if (sameType.Count > 0)
-                        candidates = sameType;
                 }
 
                 if (candidates.Count > 1)
@@ -316,6 +316,24 @@ namespace PS3TrophyIsGood
                         .Where(local => NormalizeTrophyType(local.Type) == remoteType &&
                             NormalizeIdentityPunctuation(local.Name) == looseName)
                         .ToList();
+                }
+
+                // Some PS3 trophy sets have renamed titles across regions/versions
+                // (e.g. "The Artisan" vs "The Craftsman" in Dragon's Dogma).
+                // A unique matching description *and* grade is a safe fallback.
+                // Do not use a missing description or a non-unique description.
+                if (candidates.Count == 0 && !string.IsNullOrEmpty(remoteType))
+                {
+                    string remoteDetail = NormalizeIdentityDetail(item.Detail);
+                    if (!string.IsNullOrEmpty(remoteDetail))
+                    {
+                        List<LocalTrophyIdentity> sameDescription = localTrophyIdentities
+                            .Where(local => NormalizeTrophyType(local.Type) == remoteType &&
+                                NormalizeIdentityDetail(local.Detail) == remoteDetail)
+                            .ToList();
+                        if (sameDescription.Count == 1)
+                            candidates = sameDescription;
+                    }
                 }
 
                 if (candidates.Count == 0)
@@ -473,7 +491,7 @@ namespace PS3TrophyIsGood
             // Treat hyphens as word separators; do not strip all punctuation
             // because that could merge otherwise different trophy identities.
             normalized = Regex.Replace(normalized, @"[-‐‑‒–—]", " ");
-            return Regex.Replace(normalized, @"\\s+", " ").Trim();
+            return Regex.Replace(normalized, @"\s+", " ").Trim();
         }
 
         private static string NormalizeIdentityDetail(string value)
