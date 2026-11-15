@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using PS3TrophyIsGood;
 
@@ -106,6 +107,14 @@ internal static class Program
                     Remote("The Artisan", "Combined two materials to make an item.", "B", 5678)
                 });
 
+            AssertLocalizedPsntlSet("51 French trophies map to English XMB IDs", true);
+            AssertLocalizedPsntlSet("Localized rows work in reverse page order", true, reverseRows: true);
+            AssertLocalizedPsntlSet("Missing XMB ID must not be guessed", false, missingXmbId: 11);
+            AssertLocalizedPsntlSet("Duplicate XMB IDs must not be guessed", false, duplicateXmbId: 11);
+            AssertLocalizedPsntlSet("Different XMB grade must not be guessed", false, wrongTypeId: 11);
+            AssertLocalizedPsntlSet("Conflicting matching name defeats XMB fallback", false, conflictAnchor: true);
+            AssertLocalizedPsntlSet("Partial cross-language set must not assume ID", false, partialSet: true);
+
             Console.WriteLine("PASS: " + passed + " identity mapping regression tests.");
             return 0;
         }
@@ -114,6 +123,116 @@ internal static class Program
             Console.Error.WriteLine("FAIL after " + passed + " tests: " + ex);
             return 1;
         }
+    }
+
+    // Exercise the production HTML parser AND the production identity mapper.
+    // The XMB ID is intentionally different from the page title's ID.
+    private static void AssertLocalizedPsntlSet(
+        string name, bool shouldSucceed, bool reverseRows = false,
+        int missingXmbId = -1, int duplicateXmbId = -1,
+        int wrongTypeId = -1, bool conflictAnchor = false,
+        bool partialSet = false)
+    {
+        var local = Enumerable.Range(0, 51).Select(id => Local(
+            id,
+            id == 7 ? "Shared Trophy Title" :
+                id == 0 ? "Le véritable insurgé" : "Trophée français " + id,
+            "Description française " + id + ".",
+            Grade(id))).ToArray();
+
+        IEnumerable<int> ordered = Enumerable.Range(0, partialSet ? 50 : 51);
+        if (reverseRows)
+            ordered = ordered.Reverse();
+
+        var html = new StringBuilder();
+        foreach (int id in ordered)
+        {
+            int xmbId = duplicateXmbId == id ? id - 1 :
+                        conflictAnchor && id == 7 ? 8 : id;
+            string nameEn = id == 7 ? "Shared Trophy Title" :
+                id == 0 ? "The True Arisen" : "English Trophy " + id;
+            string grade = wrongTypeId == id ? "G" : Grade(id);
+            string typeCode = grade == "P" ? "3" :
+                              grade == "G" ? "2" :
+                              grade == "S" ? "1" : "0";
+            html.Append("<tr class=\"trophyvalue").Append(id).Append("\">");
+            if (id != missingXmbId)
+                html.Append("<td class=\"XMB\">").Append(xmbId).Append("</td>");
+            html.Append("<td><a id=\"trophytitle").Append(500 + id).Append("\">")
+                .Append(nameEn).Append("</a>");
+            html.Append("<div id=\"trophydescription").Append(id)
+                .Append("\">English description ").Append(id).Append(".</div></td>");
+            html.Append("<td class=\"trophytype\">").Append(typeCode).Append("</td>");
+            html.Append("<td class=\"date_earned\"><span class=\"sort\">")
+                .Append(1700000000L + id).Append("</span></td></tr>");
+        }
+
+        try
+        {
+            using (var dialog = new CopyFrom())
+            {
+                dialog.SetLocalTrophies(local);
+                MethodInfo parse = typeof(CopyFrom).GetMethod("ParsePsntlIdentities",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo map = typeof(CopyFrom).GetMethod("MapRemoteToLocal",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+                Type siteType = typeof(CopyFrom).GetNestedType(
+                    "IdentitySource", BindingFlags.NonPublic);
+                if (parse == null || map == null || siteType == null)
+                    throw new Exception("Could not find production parser / mapper.");
+
+                IList remotes;
+                try
+                {
+                    remotes = (IList)parse.Invoke(null, new object[] { html.ToString(), 200 });
+                }
+                catch (TargetInvocationException ex)
+                {
+                    throw ex.InnerException ?? ex;
+                }
+                List<CopyFrom.Pair> result;
+                try
+                {
+                    result = (List<CopyFrom.Pair>)map.Invoke(dialog,
+                        new object[] { remotes, Enum.Parse(siteType, "PsnTrophyLeaders") });
+                }
+                catch (TargetInvocationException ex)
+                {
+                    throw ex.InnerException ?? ex;
+                }
+
+                if (!shouldSucceed)
+                    throw new Exception(name + ": unsafe mapping was accepted.");
+                if (result.Count != 51)
+                    throw new Exception(name + ": expected 51 rows, got " + result.Count);
+                for (int id = 0; id < 51; ++id)
+                {
+                    if (result[id].Id != id || result[id].Date != 1700000000L + id)
+                        throw new Exception(name + ": wrong XMB ID/timestamp at " + id);
+                }
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            if (shouldSucceed)
+                throw;
+            Console.WriteLine("PASS: " + name);
+            passed++;
+            return;
+        }
+
+        if (!shouldSucceed)
+            throw new Exception(name + ": expected a fail-closed rejection.");
+        Console.WriteLine("PASS: " + name);
+        passed++;
+    }
+
+    private static string Grade(int id)
+    {
+        if (id == 0) return "P";
+        if (id == 10 || id == 22 || id == 39) return "G";
+        if (id == 9 || id == 14 || id == 31 || id == 45) return "S";
+        return "B";
     }
 
     private static CopyFrom.LocalTrophyIdentity Local(int id, string name, string detail, string grade)
