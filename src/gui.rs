@@ -718,6 +718,36 @@ impl Render for TrophyApp {
                         .on_click(cx.listener(|this, _, _, cx| this.select_resign_profile(cx))))
             )
             .child(
+                div().w_full().px_5().py_3().bg(rgb(BG))
+                    .border_t_1().border_color(rgb(0x30394a))
+                    .flex().items_center().gap_2().text_sm()
+                    .child(div().text_color(rgb(MUTED)).child("Copy From"))
+                    .child(text_input("copy-url")
+                        .state(self.copy_url_input.downgrade())
+                        .placeholder("HTTPS PSN trophy URL or local HTML file path")
+                        .w(px(395.)).h(px(34.)).px_2().rounded_md()
+                        .border_1().border_color(rgb(0x455268))
+                        .bg(rgb(SURFACE)).text_color(rgb(TEXT)))
+                    .child(toolbar_button("PSNProfiles", false)
+                        .on_click(cx.listener(|this, _, _, cx|
+                            this.import_copy_from(CopySource::PsnProfiles, cx))))
+                    .child(toolbar_button("PSN Leaders", false)
+                        .on_click(cx.listener(|this, _, _, cx|
+                            this.import_copy_from(CopySource::PsnTrophyLeaders, cx))))
+                    .child(toolbar_button(if self.smart_copy_enabled {
+                            "Smart Copy ON"
+                        } else {
+                            "Smart Copy OFF"
+                        }, self.smart_copy_enabled)
+                        .on_click(cx.listener(|this, _, _, cx| this.toggle_smart_copy(cx))))
+                    .child(text_input("smart-copy-options")
+                        .state(self.smart_options_input.downgrade())
+                        .placeholder("years,months,days,minSec,maxSec")
+                        .w(px(210.)).h(px(34.)).px_2().rounded_md()
+                        .border_1().border_color(rgb(0x455268))
+                        .bg(rgb(SURFACE)).text_color(rgb(TEXT)))
+            )
+            .child(
                 div()
                     .w_full().px_5().py_2()
                     .bg(rgb(SURFACE))
