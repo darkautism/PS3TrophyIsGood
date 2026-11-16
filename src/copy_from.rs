@@ -175,6 +175,55 @@ fn parse_profiles(html: &str) -> Result<Vec<RemoteTrophy>> {
     Ok(result)
 }
 
+/// Read a captured trophy HTML page or fetch a supported PSN trophy page.
+/// FlareSolverr is optional, configured through FLARESOLVERR_URL, and uses
+/// its JSON HTTP API. No WebView, browser, or JavaScript is embedded.
+pub fn load_copy_page(source: CopySource, path_or_url: &str) -> Result<String> {
+    if std::path::Path::new(path_or_url).is_file() {
+        return std::fs::read_to_string(path_or_url)
+            .with_context(|| format!("read saved trophy HTML: {path_or_url}"));
+    }
+
+    let url = reqwest::Url::parse(path_or_url)
+        .context("expected a saved HTML file or HTTPS trophy URL")?;
+    ensure!(url.scheme() == "https", "Copy From only accepts HTTPS trophy pages");
+    let host = url.host_str().unwrap_or("").trim_start_matches("www.");
+    let expected = match source {
+        CopySource::PsnProfiles => "psnprofiles.com",
+        CopySource::PsnTrophyLeaders => "psntrophyleaders.com",
+    };
+    ensure!(host.eq_ignore_ascii_case(expected),
+        "Copy From source {:?} does not match {host}", source);
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(90))
+        .user_agent("Mozilla/5.0 PS3TrophyIsGood-Rust/0.1")
+        .build()?;
+    if let Ok(endpoint) = std::env::var("FLARESOLVERR_URL") {
+        let endpoint = format!("{}/v1", endpoint.trim_end_matches('/'));
+        let request = serde_json::json!({
+            "cmd": "request.get",
+            "url": url.as_str(),
+            "maxTimeout": 75_000
+        });
+        let response: serde_json::Value = client.post(&endpoint)
+            .json(&request).send()
+            .context("contact FlareSolverr")?
+            .error_for_status()?.json()
+            .context("parse FlareSolverr JSON response")?;
+        ensure!(response.get("status").and_then(|v| v.as_str()) == Some("ok"),
+            "FlareSolverr could not retrieve trophy page: {response}");
+        let html = response.pointer("/solution/response")
+            .and_then(|v| v.as_str())
+            .context("FlareSolverr returned no HTML response")?;
+        return Ok(html.to_owned());
+    }
+    let response = client.get(url).send()
+        .context("fetch trophy page (configure FLARESOLVERR_URL if the website uses Cloudflare)")?
+        .error_for_status().context("trophy website returned an HTTP error")?;
+    response.text().context("decode trophy page HTML")
+}
+
 pub fn parse_copy_page(source: CopySource, html: &str) -> Result<Vec<RemoteTrophy>> {
     let lower = html.to_ascii_lowercase();
     ensure!(!lower.contains("cf-challenge") && !lower.contains("just a moment..."),
