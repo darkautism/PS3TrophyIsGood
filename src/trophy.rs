@@ -31,6 +31,15 @@ pub enum Grade {
 }
 
 impl Grade {
+    pub fn xp(self) -> u32 {
+        match self {
+            Self::Platinum => 180,
+            Self::Gold => 90,
+            Self::Silver => 30,
+            Self::Bronze => 15,
+        }
+    }
+
     pub fn label(self) -> &'static str {
         match self {
             Self::Platinum => "Platinum",
@@ -88,6 +97,25 @@ pub struct TrophySet {
     pub title: String,
     pub format: Format,
     pub trophies: Vec<Trophy>,
+}
+
+impl TrophySet {
+    /// Original PS3TrophyIsGood PSN EXP table; only synced trophies count as
+    /// earned PSN experience, while the denominator includes every trophy.
+    pub fn psn_xp(&self) -> (u32, u32) {
+        let available = self.trophies.iter().map(|t| t.grade.xp()).sum();
+        let synced = self.trophies.iter().filter(|t| t.synced)
+            .map(|t| t.grade.xp()).sum();
+        (synced, available)
+    }
+
+    pub fn synced_count(&self) -> usize {
+        self.trophies.iter().filter(|t| t.synced).count()
+    }
+
+    pub fn obtained_count(&self) -> usize {
+        self.trophies.iter().filter(|t| t.obtained).count()
+    }
 }
 
 pub fn format_timestamp(micros: Option<i64>) -> String {
@@ -455,6 +483,16 @@ mod tests {
         fs::write(dir.path().join("TROPUSR.DAT"), dat).unwrap();
         let mut session = TrophySession::open(dir.path()).unwrap();
         assert!(session.unlock_at_utc(0, 1_700_000_001_000_000).is_err());
+    }
+
+    #[test]
+    fn psn_experience_uses_original_weights_and_only_synced_trophies() {
+        let mut set = parse_tropconf(&xml(Format::Rpcs3)).unwrap();
+        set.trophies[0].synced = true;
+        set.trophies[1].obtained = true; // Not synced: should not count.
+        assert_eq!(set.psn_xp(), (180, 195));
+        assert_eq!(set.synced_count(), 1);
+        assert_eq!(set.obtained_count(), 1);
     }
 
     #[test]
