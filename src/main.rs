@@ -28,10 +28,36 @@ fn main() -> Result<()> {
             let path = args.next().context("usage: ps3trophyisgood inspect <trophy-directory>")?;
             inspect(PathBuf::from(path))
         }
+        Some("unlock") | Some("set-time") => {
+            let folder = PathBuf::from(args.next().context("expected trophy folder")?);
+            let id: u32 = args.next().context("expected trophy ID")?
+                .to_string_lossy().parse().context("invalid trophy ID")?;
+            let date = args.next().context("expected RFC3339 UTC timestamp")?;
+            let micros = chrono::DateTime::parse_from_rfc3339(&date.to_string_lossy())
+                .context("date must be ISO-8601, e.g. 2026-11-16T12:00:00Z")?
+                .timestamp_micros();
+            let mut session = TrophySession::open(&folder)?;
+            session.unlock_at_utc(id, micros)?;
+            let backup = session.save_rpcs3_with_backup()?;
+            println!("Saved RPCS3 trophy #{id}. Original DAT backed up at {}", backup.display());
+            Ok(())
+        }
+        Some("lock") => {
+            let folder = PathBuf::from(args.next().context("expected trophy folder")?);
+            let id: u32 = args.next().context("expected trophy ID")?
+                .to_string_lossy().parse().context("invalid trophy ID")?;
+            let mut session = TrophySession::open(&folder)?;
+            session.lock(id)?;
+            let backup = session.save_rpcs3_with_backup()?;
+            println!("Locked RPCS3 trophy #{id}. Original DAT backed up at {}", backup.display());
+            Ok(())
+        }
         Some("--help") | Some("-h") => {
             println!("PS3TrophyIsGood Rust — GPU trophy viewer\n\
                       Usage:\n  ps3trophyisgood [<folder>]  open graphical viewer\n\
-                      ps3trophyisgood inspect <folder>  inspect DAT and SFM on CLI");
+                      ps3trophyisgood inspect <folder>  inspect DAT and SFM on CLI\n\
+                      ps3trophyisgood unlock <folder> <id> <UTC RFC3339>\n\
+                      ps3trophyisgood lock <folder> <id>");
             Ok(())
         }
         _ => {
