@@ -30,11 +30,14 @@ sequence, with the binary format code written in Rust.
 
 On Windows the test artifact **bundles the original pfdtool executable and
 configuration from `master`** as a compatibility component. The Rust branch does
-not track those old Windows binaries in Git. On macOS/Linux supply a compatible
-build of `pfdtool` with its `global.conf`/related config in a `pfdtool`
-folder next to the app, or set the `PFDTOOL_BIN` environment variable.
+not track those old Windows binaries in Git. On macOS/Linux, GitHub Actions builds and bundles pfdtool from the public
+`bucanero/pfd_sfo_tools` source. For a local checkout, you can also supply
+a compatible tool with `global.conf`/other config files beside it, or set
+the `PFDTOOL_BIN` environment variable.
 
-Native PS3 write-back and signing require **real trophy-file comparison testing**.
+Native PS3 write-back now also invokes pfdtool's PFD verification and performs an
+independent encrypted→decrypted `TROPTRNS.DAT` byte comparison before any source
+write. It still requires **real trophy-file comparison testing**.
 Do not replace the original `master` program with this branch until that testing
 is complete.
 
@@ -46,14 +49,18 @@ is complete.
 | 8-column trophy list, trophy PNG icons and original PSN EXP | Ported |
 | Drag/drop trophy folder, sorting and simple filtering | Ported |
 | RPCS3 TROPUSR state read and simple edit | Ported; synthetic tests |
-| Native PS3 TROPTRNS chronological state parse/rebuild | Ported; **real-file tests pending** |
-| Native PS3 pfdtool decrypt/re-encrypt/PFD resign sequence | Ported using external original helper; **real-file tests pending** |
-| Timestamp edit by explicit input | CLI, GUI date/time picker pending |
+| Native PS3 TROPTRNS chronological state parse/rebuild | Synthetic-tested; **real-file tests pending** |
+| Native PS3 pfdtool decrypt/re-encrypt/PFD resign sequence | PFD check and independent decrypt verification added; **real-file tests pending** |
+| Timestamp edit by explicit input | CLI; GUI date/time picker pending |
 | User-selectable account profile/resign to other SFO | Not implemented |
 | Copy From PSN Trophy Leaders / PSNProfiles | Not implemented |
-| Smart Copy, random time intervals and instant platinum | Not implemented |
+| Instant Platinum and clear unsynchronized tail | Core and GUI action, synthetic-tested; random-range GUI pending |
+| Smart Copy, user-configurable random intervals | Not implemented in GUI; CLI accepts instant-platinum range |
 | Full original language translations and configuration | Not implemented |
 | 1:1 functional parity | **Not achieved** |
+
+For the complete source-based parity audit and release blockers, see
+[docs/FEATURE_PARITY.md](docs/FEATURE_PARITY.md).
 
 ## Build
 
@@ -66,6 +73,13 @@ To set an exact UTC timestamp for an unlocked trophy or unlock a trophy:
 
 ```sh
 cargo run --no-default-features -- set-time /path/to/trophy/folder 1 2026-11-16T12:00:00Z
+```
+
+For the original batch edit commands:
+
+```sh
+cargo run --no-default-features -- instant-platinum /path/to/trophy/folder 2026-01-01T00:00:00Z 2026-11-16T12:00:00Z
+cargo run --no-default-features -- clear /path/to/trophy/folder
 ```
 
 For the GPU desktop build:
