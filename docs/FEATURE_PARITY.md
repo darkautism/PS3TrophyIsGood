@@ -37,11 +37,11 @@ Status terminology:
 | Instant Platinum base-game → Platinum → DLC | `MainAPP.瞬間白金...` | Synthetic-tested, GPUI random date controls present | Real native PS3 round trip and time semantics |
 | Clear unsynchronized trophy log tail | `MainAPP.清除獎杯...`, `TROPTRNS.PopTrophy` | Synthetic-tested | Compare behavior on irregular/same-time event sequences |
 | Random start/end settings, batch random dates | `MainAPP.setRandomStartTime...`, `setRandomEndTime...` | GUI interval controls and instant platinum | General batch time editor and validation on hardware |
-| Copy From PSN Trophy Leaders | `CopyFrom.cs`, `CopyFrom.IdentityMapping.cs` | Parser, HTTPS, GUI, CLI, strict identity mapping code present | Live website content and imported PS3 file tests |
-| Copy From PSNProfiles | `CopyFrom.PSNProfiles.cs`, `CopyFrom.IdentityMapping.cs` | Parser, date handling, HTTPS, GUI, CLI code present | Live website content and imported PS3 file tests |
+| Copy From PSN Trophy Leaders | `CopyFrom.cs`, `CopyFrom.IdentityMapping.cs` | Automatic URL / saved-HTML detection, identity-based mapping, GUI + CLI, opt-in original sync reset, regression tests | Live page and actual native PS3 file tests |
+| Copy From PSNProfiles | `CopyFrom.PSNProfiles.cs`, `CopyFrom.IdentityMapping.cs` | Auto-detected import, UTC timestamps, name/type mapping, optional synced overwrite with confirmation | Actual live HTML and native encrypted PS3 file tests |
 | Smart Copy / time offset | `CopyFrom.smartCopy`, `smartCopyPairs` | Core algorithm, GUI options and CLI present; synthetic-tested | Offset edge cases, live import and original UI parity |
 | XMB trophy ID mapping, name/description fallback, issue #65 | `CopyFrom.IdentityMapping.cs` | ID corroboration plus strict type/name/description mapping present | Different trophy-set versions, translated site names / live samples |
-| Cloudflare/FlareSolverr verification | `FlareSolverrManager.cs`, CopyFrom UIs | Optional FlareSolverr HTTP API, no embedded browser | Challenge response/session workflow and live testing |
+| Cloudflare/FlareSolverr verification | `FlareSolverrManager.cs`, CopyFrom UIs | Direct HTTPS then existing FlareSolverr endpoint (env URL or localhost:8191); saved HTML supported; residual challenge scripts tolerated | **Missing original auto-install/start helper and embedded WebView2 human verification**; live testing still needed |
 | Profile resign using external SFO | `Utility.encryptTrophy`, profile combo | Native profile file picker, CLI and SFO account-ID copy synthetic tests | Real PS3 account signing and PFD verification |
 | English, zh-Hant, pt-BR language settings | `MainAPP.cs`, `*.resx` | Missing | Persist settings and complete GUI localization |
 | Original application icon, Windows without console | `orignal.ico` / Windows resource | Code present | Inspect actual Windows executable + taskbar/title icon |
@@ -87,3 +87,11 @@ retail PS3 round-trip, PFD ownership/account checks, and PS3 loading/syncing.
 
 The product is the original **PlayStation 3** trophy editor. RPCS3 is only
 an additional auto-detected input format.
+
+## Copy From parity audit (2026-11-17)
+
+The original `master` Copy From form automatically selects PSN Trophy Leaders or PSNProfiles from the URL, starts/manages FlareSolverr, can show an embedded WebView2 verification step, applies matched local trophy IDs (never website indices), and clears the sync status of **each matched trophy** before importing source timestamps. Its Smart Copy uses a year/month/day offset and a randomized amount labeled “minutes” but actually calculated as **seconds**.
+
+The Rust core now offers both a conservative default (synced entries preserved and counted) and an explicit original-compatible option (`--overwrite-synced` in the CLI, confirmed opt-in within GUI). Changes stay in memory until Save, which makes a backup. An in-flight import cannot overwrite a folder whose trophy timestamps or sync state changed after import started. Smart Copy checks arithmetic and leaves the entire mapping intact on failure.
+
+**Still not equivalent:** The original managed its own FlareSolverr install/process and guided human Cloudflare verification using WebView2. The Rust version can only use a running FlareSolverr helper or saved HTML. Its parsers have synthetic regressions, but live page formats and true native PS3 encrypted files have not yet been validated. No claim of complete 1:1 behavior should be made.
