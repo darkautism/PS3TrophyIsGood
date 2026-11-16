@@ -841,6 +841,18 @@ impl Render for TrophyApp {
                             .w(px(480.)).h(px(34.)).px_2().rounded_md()
                             .border_1().border_color(rgb(0x455268))
                             .bg(rgb(BG)).text_color(rgb(TEXT)))
+                        .child(toolbar_button("選擇 HTML...", false)
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                if let Some(path) = rfd::FileDialog::new()
+                                    .add_filter("HTML", &["html", "htm"])
+                                    .pick_file()
+                                {
+                                    let path = path.to_string_lossy().into_owned();
+                                    this.copy_url_input.update(cx, |input, cx|
+                                        input.emplace(&path, cx));
+                                    cx.notify();
+                                }
+                            })))
                         .child(toolbar_button("匯入 Copy From", false)
                             .on_click(cx.listener(|this, _, _, cx|
                                 this.import_copy_from(cx))))
