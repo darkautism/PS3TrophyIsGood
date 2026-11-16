@@ -8,7 +8,10 @@ use gpui_ce_elements::editable_text::{
     EditableTextState, StringStorage, text_input,
     actions::{default_bindings, DEFAULT_INPUT_CONTEXT},
 };
-use ps3trophyisgood::{SortKey, TrophySession, format_timestamp};
+use ps3trophyisgood::{
+    SortKey, TrophySession, format_timestamp, CopySource, SmartCopyOptions,
+    load_copy_page, parse_copy_page, map_remote_to_local, smart_copy,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -39,6 +42,10 @@ pub struct TrophyApp {
     time_input: gpui::Entity<EditableTextState>,
     random_start_input: gpui::Entity<EditableTextState>,
     random_end_input: gpui::Entity<EditableTextState>,
+    copy_url_input: gpui::Entity<EditableTextState>,
+    smart_options_input: gpui::Entity<EditableTextState>,
+    smart_copy_enabled: bool,
+    is_copying: bool,
 }
 
 impl TrophyApp {
@@ -48,6 +55,9 @@ impl TrophyApp {
         let random_start_input = cx.new(|cx| EditableTextState::new(
             StringStorage::from("2008-01-01T00:00:00Z"), cx));
         let random_end_input = cx.new(|cx| EditableTextState::new(StringStorage::from(now), cx));
+        let copy_url_input = cx.new(|cx| EditableTextState::new(StringStorage::default(), cx));
+        let smart_options_input = cx.new(|cx| EditableTextState::new(
+            StringStorage::from("0,0,0,0,0"), cx));
         let mut app = Self {
             session: None,
             icons: HashMap::new(),
@@ -61,6 +71,10 @@ impl TrophyApp {
             time_input,
             random_start_input,
             random_end_input,
+            copy_url_input,
+            smart_options_input,
+            smart_copy_enabled: false,
+            is_copying: false,
         };
         if let Some(folder) = std::env::args_os().nth(1) {
             app.open_folder(std::path::PathBuf::from(folder));
