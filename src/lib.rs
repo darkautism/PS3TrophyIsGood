@@ -10,6 +10,7 @@ mod copy_from;
 pub use copy_from::{
     CopySource, RemoteTrophy, SmartCopyOptions, parse_copy_page,
     map_remote_to_local, smart_copy, load_copy_page,
+    detect_copy_source, load_copy_page_auto,
 };
 pub use trophy::{
     Format, Grade, SortKey, Trophy, TrophySession, TrophySet,
