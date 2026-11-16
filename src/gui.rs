@@ -319,6 +319,106 @@ impl TrophyApp {
         cx.notify();
     }
 
+    fn toggle_smart_copy(&mut self, cx: &mut Context<Self>) {
+        self.smart_copy_enabled = !self.smart_copy_enabled;
+        cx.notify();
+    }
+
+    fn import_copy_from(&mut self, source: CopySource, cx: &mut Context<Self>) {
+        let Some(session) = self.session.as_ref() else {
+            self.status = "Open a PS3 trophy folder before importing Copy From.".into();
+            cx.notify();
+            return;
+        };
+        if self.is_copying {
+            self.status = "An existing Copy From request is already running.".into();
+            cx.notify();
+            return;
+        }
+        let url = self.copy_url_input.read(cx).as_str().trim().to_owned();
+        if url.is_empty() {
+            self.status = "Enter a PSN Trophy Leaders / PSNProfiles HTTPS URL or local HTML path.".into();
+            cx.notify();
+            return;
+        }
+        let options = if self.smart_copy_enabled {
+            let text = self.smart_options_input.read(cx).as_str().to_owned();
+            let values: Vec<&str> = text.split(',').map(str::trim).collect();
+            if values.len() != 5 {
+                self.status = "Smart Copy expects years,months,days,minSeconds,maxSeconds.".into();
+                cx.notify();
+                return;
+            }
+            let parse = || -> anyhow::Result<SmartCopyOptions> {
+                Ok(SmartCopyOptions {
+                    years: values[0].parse()?,
+                    months: values[1].parse()?,
+                    days: values[2].parse()?,
+                    min_jitter_seconds: values[3].parse()?,
+                    max_jitter_seconds: values[4].parse()?,
+                })
+            };
+            match parse() {
+                Ok(opts) => Some(opts),
+                Err(error) => {
+                    self.status = format!("Invalid Smart Copy time offset: {error}");
+                    cx.notify();
+                    return;
+                }
+            }
+        } else { None };
+        let folder = session.source.clone();
+        let local = session.set.trophies.clone();
+        self.is_copying = true;
+        self.status = format!("Fetching {} trophy identities...", source.label());
+        cx.notify();
+
+        // HTTP and DOM parsing run off the UI thread; only the validated
+        // mapping comes back to the GPUI view. Nothing is saved automatically.
+        cx.spawn(async move |this, cx| {
+            let result = cx.background_spawn(async move {
+                let html = load_copy_page(source, &url)?;
+                let remote = parse_copy_page(source, &html)?;
+                let count = remote.len();
+                let mut mapping = map_remote_to_local(&local, &remote)?;
+                if let Some(opts) = options {
+                    smart_copy(&mut mapping, opts)?;
+                }
+                Ok::<_, anyhow::Error>((count, mapping))
+            }).await;
+            this.update(cx, |view, cx| {
+                view.is_copying = false;
+                if view.session.as_ref().is_none_or(|s| s.source != folder) {
+                    view.status = "Copy From abandoned: a different trophy folder was opened.".into();
+                    cx.notify();
+                    return;
+                }
+                match result {
+                    Err(error) => {
+                        view.status = format!("Copy From failed without modifying trophies: {error:#}");
+                    }
+                    Ok((remote_count, mapping)) => {
+                        let matched = mapping.len();
+                        if let Some(session) = view.session.as_mut() {
+                            match session.apply_copy_from(&mapping) {
+                                Ok(changed) => {
+                                    view.dirty |= changed > 0;
+                                    view.status = format!(
+                                        "{} source rows; {} identities matched; {} timestamps edited in memory. Click Save.",
+                                        remote_count, matched, changed);
+                                    view.rebuild();
+                                }
+                                Err(error) => view.status = format!(
+                                    "Copy From edits rejected without modifying trophies: {error:#}"),
+                            }
+                        }
+                    }
+                }
+                cx.notify();
+            }).ok();
+        }).detach();
+    }
+
     fn select_resign_profile(&mut self, cx: &mut Context<Self>) {
         let Some(session) = self.session.as_mut() else {
             self.status = "Open a native PlayStation 3 trophy folder first.".into();
