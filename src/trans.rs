@@ -142,3 +142,114 @@ impl Trans {
         Ok(&self.raw)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::trophy::Trophy;
+
+    fn trophy(id: u32, grade: Grade) -> Trophy {
+        Trophy {
+            id,
+            name: format!("Trophy {id}"),
+            description: String::new(),
+            grade,
+            hidden: false,
+            group_id: 0,
+            obtained: false,
+            synced: false,
+            earned_us: None,
+        }
+    }
+
+    // The actual type table and event slot layout are taken from the
+    // WinForms TROPHYParser/TROPTRNS.cs binary structures, not from RPCS3.
+    fn empty_native_trns(capacity: usize) -> Vec<u8> {
+        let type3 = 48 + 2 * 32;
+        let type4 = type3 + 64;
+        let stride = 16 + INFO_LEN;
+        let mut raw = vec![0u8; type4 + (capacity + 1) * stride];
+        raw[0..8].copy_from_slice(&MAGIC.to_le_bytes());
+        raw[8..12].copy_from_slice(&2u32.to_be_bytes());
+
+        let a = 48;
+        raw[a..a + 4].copy_from_slice(&3u32.to_be_bytes());
+        raw[a + 4..a + 8].copy_from_slice(&1u32.to_be_bytes());
+        raw[a + 16..a + 24].copy_from_slice(&(type3 as u64).to_be_bytes());
+
+        let b = 48 + 32;
+        raw[b..b + 4].copy_from_slice(&4u32.to_be_bytes());
+        raw[b + 4..b + 8].copy_from_slice(&(capacity as u32).to_be_bytes());
+        raw[b + 16..b + 24].copy_from_slice(&(type4 as u64).to_be_bytes());
+
+        raw[type3..type3 + 4].copy_from_slice(&3u32.to_be_bytes());
+        raw[type3 + 4..type3 + 8].copy_from_slice(&48u32.to_be_bytes());
+        raw[type3 + 16 + 16 + 4..type3 + 16 + 16 + 8]
+            .copy_from_slice(&1u32.to_be_bytes());
+        raw[type3 + 16 + 16 + 8..type3 + 16 + 16 + 12]
+            .copy_from_slice(&1u32.to_be_bytes());
+
+        raw[type4..type4 + 4].copy_from_slice(&4u32.to_be_bytes());
+        raw[type4 + 4..type4 + 8].copy_from_slice(&(INFO_LEN as u32).to_be_bytes());
+        raw
+    }
+
+    #[test]
+    fn native_transaction_log_rebuild_reload_and_sync_counters() {
+        let mut raw = empty_native_trns(3);
+        // Header and the init record must survive editing.
+        let init = 48 + 2 * 32 + 64 + 16;
+        raw[init + 70] = 0xA5;
+        let initial = vec![
+            trophy(0, Grade::Platinum),
+            trophy(1, Grade::Bronze),
+            trophy(2, Grade::Silver),
+        ];
+        let mut trophies = initial.clone();
+        let mut trans = Trans::load(raw, &mut trophies).unwrap();
+        assert!(trophies.iter().all(|t| !t.obtained));
+
+        trophies[1].obtained = true;
+        trophies[1].earned_us = Some(1_700_000_000_000_000);
+        trophies[1].synced = true;
+        trophies[2].obtained = true;
+        trophies[2].earned_us = Some(1_700_000_100_000_000);
+        let rebuilt = trans.rebuild(&trophies).unwrap().to_vec();
+        assert_eq!(rebuilt[init + 70], 0xA5);
+        let type3 = 48 + 2 * 32;
+        assert_eq!(be32(&rebuilt, type3 + 16 + 16 + 4).unwrap(), 3);
+        assert_eq!(be32(&rebuilt, type3 + 16 + 16 + 8).unwrap(), 2);
+
+        let mut reopened = initial.clone();
+        let mut second = Trans::load(rebuilt, &mut reopened).unwrap();
+        assert!(reopened[1].obtained && reopened[1].synced);
+        assert!(reopened[2].obtained && !reopened[2].synced);
+        assert_eq!(reopened[1].earned_us, Some(1_700_000_000_000_000));
+        assert_eq!(reopened[2].earned_us, Some(1_700_000_100_000_000));
+
+        reopened[1].synced = false;
+        reopened[1].obtained = false;
+        reopened[1].earned_us = None;
+        let rebuilt_again = second.rebuild(&reopened).unwrap().to_vec();
+        let mut last = initial;
+        let _ = Trans::load(rebuilt_again.clone(), &mut last).unwrap();
+        assert!(!last[1].obtained);
+        assert!(last[2].obtained);
+        assert_eq!(be32(&rebuilt_again, type3 + 16 + 16 + 4).unwrap(), 2);
+        assert_eq!(be32(&rebuilt_again, type3 + 16 + 16 + 8).unwrap(), 1);
+    }
+
+    #[test]
+    fn native_transaction_log_rejects_overflow_and_unknown_trophies() {
+        let raw = empty_native_trns(1);
+        let mut trophies = vec![trophy(0, Grade::Bronze)];
+        let mut trans = Trans::load(raw, &mut trophies).unwrap();
+        trophies.push(trophy(1, Grade::Gold));
+        trophies.iter_mut().for_each(|t| {
+            t.obtained = true;
+            t.earned_us = Some(1_700_000_000_000_000);
+        });
+        assert!(trans.rebuild(&trophies).is_err());
+    }
+}
