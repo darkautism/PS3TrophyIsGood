@@ -200,3 +200,63 @@ impl Ps3Working {
         Ok(backup)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn profile_rewrites_only_account_id_in_staged_sfo() {
+        let root = tempfile::tempdir().unwrap();
+        let working = tempfile::tempdir().unwrap();
+        let trophy_folder = working.path().join("native");
+        fs::create_dir(&trophy_folder).unwrap();
+        let mut original_sfo = vec![0xABu8; 0x300];
+        original_sfo[0x274..0x284].fill(0);
+        fs::write(trophy_folder.join("PARAM.SFO"), &original_sfo).unwrap();
+
+        // Original Utility.encryptTrophy reads a little-endian 32-bit offset
+        // from profile+0xC and copies 16 bytes at that offset.
+        let mut profile = vec![0u8; 0x80];
+        profile[12..16].copy_from_slice(&0x30u32.to_le_bytes());
+        let account: [u8; 16] = *b"ABCDEFGHIJKLMNOP";
+        profile[0x30..0x40].copy_from_slice(&account);
+        let profile_path = root.path().join("other-account.sfo");
+        fs::write(&profile_path, profile).unwrap();
+
+        let mut session = Ps3Working {
+            stage: working,
+            trophy_folder: trophy_folder.clone(),
+            tool: PathBuf::from("not-invoked"),
+        };
+        session.select_profile(&profile_path).unwrap();
+        let updated = fs::read(trophy_folder.join("PARAM.SFO")).unwrap();
+        assert_eq!(&updated[0x274..0x284], &account);
+        let mut expected = original_sfo;
+        expected[0x274..0x284].copy_from_slice(&account);
+        assert_eq!(updated, expected);
+    }
+
+    #[test]
+    fn invalid_profile_does_not_change_native_param_sfo() {
+        let root = tempfile::tempdir().unwrap();
+        let working = tempfile::tempdir().unwrap();
+        let trophy_folder = working.path().join("native");
+        fs::create_dir(&trophy_folder).unwrap();
+        let original_sfo = vec![42u8; 0x300];
+        fs::write(trophy_folder.join("PARAM.SFO"), &original_sfo).unwrap();
+
+        let mut profile = vec![0u8; 0x20];
+        profile[12..16].copy_from_slice(&0xffff_ffffu32.to_le_bytes());
+        let profile_path = root.path().join("broken.sfo");
+        fs::write(&profile_path, profile).unwrap();
+        let mut session = Ps3Working {
+            stage: working,
+            trophy_folder: trophy_folder.clone(),
+            tool: PathBuf::from("not-invoked"),
+        };
+        assert!(session.select_profile(&profile_path).is_err());
+        assert_eq!(fs::read(trophy_folder.join("PARAM.SFO")).unwrap(), original_sfo);
+    }
+}
