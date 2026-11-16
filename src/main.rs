@@ -107,33 +107,46 @@ fn main() -> Result<()> {
             let remote = parse_copy_page(source, &html)?;
             let mut session = TrophySession::open(folder)?;
             let mut mapping = map_remote_to_local(&session.set.trophies, &remote)?;
-            if let Some(flag) = args.next() {
-                anyhow::ensure!(flag == "--smart", "expected --smart or no remaining arguments");
-                let number = |args: &mut std::iter::Skip<std::env::ArgsOs>| -> Result<i64> {
-                    Ok(args.next().context("missing Smart Copy offset value")?
-                        .to_string_lossy().parse().context("invalid Smart Copy offset")?)
-                };
-                let years = u32::try_from(number(&mut args)?)?;
-                let months = u32::try_from(number(&mut args)?)?;
-                let days = u32::try_from(number(&mut args)?)?;
-                let min_jitter_seconds = number(&mut args)?;
-                let max_jitter_seconds = number(&mut args)?;
-                smart_copy(&mut mapping, SmartCopyOptions {
-                    years, months, days, min_jitter_seconds, max_jitter_seconds,
-                })?;
+            let mut reset_synced = false;
+            let mut smart_used = false;
+            while let Some(flag) = args.next() {
+                match flag.to_str() {
+                    Some("--smart") if !smart_used => {
+                        smart_used = true;
+                        let number = |args: &mut std::iter::Skip<std::env::ArgsOs>| -> Result<i64> {
+                            Ok(args.next().context("missing Smart Copy offset value")?
+                                .to_string_lossy().parse().context("invalid Smart Copy offset")?)
+                        };
+                        let years = u32::try_from(number(&mut args)?)?;
+                        let months = u32::try_from(number(&mut args)?)?;
+                        let days = u32::try_from(number(&mut args)?)?;
+                        let min_jitter_seconds = number(&mut args)?;
+                        let max_jitter_seconds = number(&mut args)?;
+                        smart_copy(&mut mapping, SmartCopyOptions {
+                            years, months, days, min_jitter_seconds, max_jitter_seconds,
+                        })?;
+                    }
+                    Some("--overwrite-synced") if !reset_synced => {
+                        // Explicitly request the original WinForms Copy From
+                        // behavior: synced entries lose their sync flags.
+                        reset_synced = true;
+                    }
+                    _ => anyhow::bail!("unknown or duplicate Copy From flag: {}", flag.to_string_lossy()),
+                }
             }
-            let skipped_synced = mapping.iter().filter(|(id, time)|
-                session.set.trophies.iter().find(|t| t.id == *id)
-                    .is_some_and(|t| t.synced && t.earned_us != *time)
+            let synced_matched = mapping.iter().filter(|(id, _)|
+                session.set.trophies.iter().any(|t| t.id == *id && t.synced)
             ).count();
-            let changed = session.apply_copy_from(&mapping)?;
+            let changed = session.apply_copy_from_with_options(&mapping, reset_synced)?;
             if changed == 0 {
-                println!("Copy From matched {} trophies; no edits. {} PSN-synced trophies were protected.",
-                    mapping.len(), skipped_synced);
+                println!("Copy From matched {} trophies; no edits. {} synced entries preserved.",
+                    mapping.len(), synced_matched);
             } else {
                 let backup = session.save_with_backup()?;
-                println!("Copy From matched {} trophies and updated {changed}; {} PSN-synced entries preserved. Originals backed up at {}",
-                    mapping.len(), skipped_synced, backup.display());
+                println!("Copy From matched {} trophies and updated {changed}; {} synced entries {}. Originals backed up at {}",
+                    mapping.len(), synced_matched,
+                    if reset_synced { "reset (original-compatible)" } else { "preserved" },
+                    backup.display());
             }
             Ok(())
         }
@@ -157,8 +170,8 @@ Usage:
   ps3trophyisgood instant-platinum <folder> [<start RFC3339>] [<end RFC3339>]
   ps3trophyisgood clear <folder>  clear unsynced trophy timeline tail
   ps3trophyisgood resign-profile <folder> <profile.sfo>
-  ps3trophyisgood copy-from <folder> <URL|saved.html> [--smart <years> <months> <days> <minSeconds> <maxSeconds>]
-  ps3trophyisgood copy-from <folder> <psnprofiles|psntl> <URL|saved.html> [--smart <years> <months> <days> <minSeconds> <maxSeconds>]");
+  ps3trophyisgood copy-from <folder> <URL|saved.html> [--smart <years> <months> <days> <minSeconds> <maxSeconds>] [--overwrite-synced]
+  ps3trophyisgood copy-from <folder> <psnprofiles|psntl> <URL|saved.html> [--smart <years> <months> <days> <minSeconds> <maxSeconds>] [--overwrite-synced]");
             Ok(())
         }
         _ => {
