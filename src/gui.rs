@@ -106,6 +106,57 @@ impl TrophyApp {
         self.rebuild();
         cx.notify();
     }
+
+    fn unlock_selected(&mut self, cx: &mut Context<Self>) {
+        let Some(id) = self.selected_id else {
+            self.status = "Select a trophy first.".into();
+            cx.notify();
+            return;
+        };
+        if let Some(session) = self.session.as_mut() {
+            let at = chrono::Utc::now().timestamp_micros();
+            match session.unlock_at_utc(id, at) {
+                Ok(()) => {
+                    self.status = format!("Changed trophy #{id} in memory; click Save RPCS3 to persist.");
+                    self.rebuild();
+                }
+                Err(e) => self.status = format!("Cannot unlock trophy #{id}: {e:#}"),
+            }
+        }
+        cx.notify();
+    }
+
+    fn lock_selected(&mut self, cx: &mut Context<Self>) {
+        let Some(id) = self.selected_id else {
+            self.status = "Select a trophy first.".into();
+            cx.notify();
+            return;
+        };
+        if let Some(session) = self.session.as_mut() {
+            match session.lock(id) {
+                Ok(()) => {
+                    self.status = format!("Locked trophy #{id} in memory; click Save RPCS3 to persist.");
+                    self.rebuild();
+                }
+                Err(e) => self.status = format!("Cannot lock trophy #{id}: {e:#}"),
+            }
+        }
+        cx.notify();
+    }
+
+    fn save(&mut self, cx: &mut Context<Self>) {
+        let result = self.session.as_ref()
+            .map(|session| (session.source.clone(), session.save_rpcs3_with_backup()));
+        match result {
+            Some((path, Ok(backup))) => {
+                self.open_folder(path);
+                self.status = format!("Saved safely. Original DAT backup: {}", backup.display());
+            }
+            Some((_, Err(e))) => self.status = format!("Save refused: {e:#}"),
+            None => self.status = "Open an RPCS3 trophy folder first.".into(),
+        }
+        cx.notify();
+    }
 }
 
 fn grade_rank(grade: ps3trophyisgood::Grade) -> u8 {
@@ -118,8 +169,8 @@ fn grade_rank(grade: ps3trophyisgood::Grade) -> u8 {
     }
 }
 
-fn toolbar_button(label: &'static str, active: bool) -> impl IntoElement {
-    div()
+fn toolbar_button(label: &'static str, active: bool) -> gpui::Stateful<gpui::Div> {
+    div().id(label)
         .px_3()
         .py_2()
         .rounded_md()
@@ -144,7 +195,7 @@ impl Render for TrophyApp {
             self.session.as_ref()
                 .and_then(|s| s.set.trophies.iter().find(|t| t.id == id)))
             .cloned();
-        let open_button = div()
+        let open_button = div().id("open-folder")
             .px_4().py_2()
             .rounded_md().bg(rgb(ACCENT))
             .text_color(rgb(BG))
@@ -174,15 +225,15 @@ impl Render for TrophyApp {
             .text_sm()
             .text_color(rgb(MUTED))
             .child(div().w(px(55.)).child("ID"))
-            .child(div().w(px(280.)).cursor_pointer().text_color(rgb(if sort_name { ACCENT } else { MUTED }))
+            .child(div().id("sort-name").w(px(280.)).cursor_pointer().text_color(rgb(if sort_name { ACCENT } else { MUTED }))
                 .child("Trophy Name")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Name, cx))))
-            .child(div().w(px(105.)).cursor_pointer().text_color(rgb(if sort_grade { ACCENT } else { MUTED }))
+            .child(div().id("sort-grade").w(px(105.)).cursor_pointer().text_color(rgb(if sort_grade { ACCENT } else { MUTED }))
                 .child("Type")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Grade, cx))))
             .child(div().w(px(72.)).child("Earned"))
             .child(div().w(px(72.)).child("Synced"))
-            .child(div().w(px(205.)).cursor_pointer().text_color(rgb(if sort_date { ACCENT } else { MUTED }))
+            .child(div().id("sort-date").w(px(205.)).cursor_pointer().text_color(rgb(if sort_date { ACCENT } else { MUTED }))
                 .child("Obtainment Time")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::EarnedTime, cx))))
             .child(div().w(px(100.)).child("From"));
@@ -221,6 +272,12 @@ impl Render for TrophyApp {
                         .on_click(cx.listener(|this, _, _, cx| this.set_filter(Filter::Locked, cx))))
                     .child(div().px_3().text_sm().text_color(rgb(MUTED))
                         .child(format!("{count} shown  •  Click columns to sort")))
+                    .child(toolbar_button("Unlock Now", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.unlock_selected(cx))))
+                    .child(toolbar_button("Lock", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.lock_selected(cx))))
+                    .child(toolbar_button("Save RPCS3", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.save(cx))))
             )
             .child(
                 div()
