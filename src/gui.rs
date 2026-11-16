@@ -31,6 +31,7 @@ pub struct TrophyApp {
     descending: bool,
     filter: Filter,
     status: String,
+    dirty: bool,
 }
 
 impl TrophyApp {
@@ -44,6 +45,7 @@ impl TrophyApp {
             descending: false,
             filter: Filter::All,
             status: "Drag a PS3 trophy folder here, or click Open Folder.".into(),
+            dirty: false,
         };
         if let Some(folder) = std::env::args_os().nth(1) {
             app.open_folder(std::path::PathBuf::from(folder));
@@ -52,11 +54,33 @@ impl TrophyApp {
     }
 
     fn open_folder(&mut self, path: std::path::PathBuf) {
+        if self.dirty {
+            use rfd::{MessageButtons, MessageDialog, MessageDialogResult};
+            match MessageDialog::new()
+                .set_title("Unsaved trophy edits")
+                .set_description("Save changes to the currently opened trophy set before opening another?")
+                .set_buttons(MessageButtons::YesNoCancel)
+                .show()
+            {
+                MessageDialogResult::Yes => {
+                    if let Some(session) = self.session.as_ref() {
+                        if let Err(error) = session.save_with_backup() {
+                            self.status = format!("Unable to save current trophy set: {error:#}");
+                            return;
+                        }
+                    }
+                    self.dirty = false;
+                }
+                MessageDialogResult::No => {}
+                _ => return,
+            }
+        }
         match TrophySession::open(&path) {
             Ok(session) => {
                 let total = session.set.trophies.len();
                 let format = session.set.format.label();
                 self.selected_id = None;
+                self.dirty = false;
                 self.icons.clear();
                 // Cache each PNG once, keyed by the real trophy ID rather than
                 // the row position (which changes when sorting or filtering).
@@ -132,6 +156,7 @@ impl TrophyApp {
             match session.unlock_at_utc(id, at) {
                 Ok(()) => {
                     self.status = format!("Changed trophy #{id} in memory; click Save to persist.");
+                    self.dirty = true;
                     self.rebuild();
                 }
                 Err(e) => self.status = format!("Cannot unlock trophy #{id}: {e:#}"),
@@ -150,9 +175,42 @@ impl TrophyApp {
             match session.lock(id) {
                 Ok(()) => {
                     self.status = format!("Locked trophy #{id} in memory; click Save to persist.");
+                    self.dirty = true;
                     self.rebuild();
                 }
                 Err(e) => self.status = format!("Cannot lock trophy #{id}: {e:#}"),
+            }
+        }
+        cx.notify();
+    }
+
+    fn instant_platinum(&mut self, cx: &mut Context<Self>) {
+        if let Some(session) = self.session.as_mut() {
+            // The original default random interval starts on 2008-01-01 and
+            // ends at the current time; native PSN sync times tighten the
+            // interval in the data layer.
+            let now = chrono::Utc::now().timestamp_micros();
+            match session.instant_platinum(1_199_145_600_000_000, now) {
+                Ok(count) => {
+                    self.status = format!("{count} trophies unlocked in memory. Click Save to persist.");
+                    if count > 0 { self.dirty = true; }
+                    self.rebuild();
+                }
+                Err(error) => self.status = format!("Instant Platinum failed: {error:#}"),
+            }
+        }
+        cx.notify();
+    }
+
+    fn clear_unsynced(&mut self, cx: &mut Context<Self>) {
+        if let Some(session) = self.session.as_mut() {
+            match session.clear_unsynced_tail() {
+                Ok(count) => {
+                    self.status = format!("{count} unsynchronized trophies cleared in memory. Click Save to persist.");
+                    if count > 0 { self.dirty = true; }
+                    self.rebuild();
+                }
+                Err(error) => self.status = format!("Clear trophies failed: {error:#}"),
             }
         }
         cx.notify();
@@ -163,6 +221,7 @@ impl TrophyApp {
             .map(|session| (session.source.clone(), session.save_with_backup()));
         match result {
             Some((path, Ok(backup))) => {
+                self.dirty = false;
                 self.open_folder(path);
                 self.status = format!("Saved trophy data. Originals backed up at {}", backup.display());
             }
@@ -316,10 +375,14 @@ impl Render for TrophyApp {
                         .on_click(cx.listener(|this, _, _, cx| this.set_filter(Filter::Locked, cx))))
                     .child(div().px_3().text_sm().text_color(rgb(MUTED))
                         .child(format!("{count} shown  •  Click columns to sort")))
-                    .child(toolbar_button("Unlock Now", false)
+                    .child(toolbar_button("Unlock Selected", false)
                         .on_click(cx.listener(|this, _, _, cx| this.unlock_selected(cx))))
                     .child(toolbar_button("Lock", false)
                         .on_click(cx.listener(|this, _, _, cx| this.lock_selected(cx))))
+                    .child(toolbar_button("Instant Platinum", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.instant_platinum(cx))))
+                    .child(toolbar_button("Clear Unsynced", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.clear_unsynced(cx))))
                     .child(toolbar_button("Save", false)
                         .on_click(cx.listener(|this, _, _, cx| this.save(cx))))
             )
