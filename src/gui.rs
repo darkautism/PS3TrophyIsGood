@@ -688,7 +688,7 @@ impl Render for TrophyApp {
                     .flex_col()
                     .px_4()
                     .child(
-                        div().flex_1().min_h_0().overflow_x_scroll()
+                        div().flex_1().min_h_0().overflow_scroll()
                             .border_1().border_color(rgb(0x30394a))
                             .child(
                                 div().min_w(px(1200.)).w_full().h_full()
