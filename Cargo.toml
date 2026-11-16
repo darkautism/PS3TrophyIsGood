@@ -7,7 +7,7 @@ description = "Cross-platform PS3 / RPCS3 trophy editor using Rust and GPUI"
 
 [features]
 default = ["gui"]
-gui = ["dep:gpui", "dep:gpui_platform", "dep:rfd"]
+gui = ["dep:gpui", "dep:gpui_platform", "dep:gpui_ce_elements", "dep:rfd"]
 
 [dependencies]
 anyhow = "1.0"
@@ -17,6 +17,7 @@ rand = "0.8"
 tempfile = "3.15"
 gpui = { package = "gpui-ce", version = "=0.3.0", optional = true }
 gpui_platform = { package = "gpui_ce_platform", version = "=0.3.0", features = ["font-kit", "wayland", "x11"], optional = true }
+gpui_ce_elements = { version = "=0.3.0", optional = true }
 rfd = { version = "0.15", optional = true }
 
 [[bin]]
