@@ -495,13 +495,15 @@ fn grade_rank(grade: ps3trophyisgood::Grade) -> u8 {
 }
 
 fn toolbar_button(label: &'static str, active: bool) -> gpui::Stateful<gpui::Div> {
+    // Desktop utility buttons: consistent sizing, restrained borders,
+    // no oversized primary call-to-action or saturated highlights.
     div().id(label)
         .px_3().py_1p5()
-        .rounded_md()
-        .border_1().border_color(rgb(if active { 0x5b8ebf } else { 0x344358 }))
-        .bg(rgb(if active { 0x273f58 } else { SURFACE }))
+        .rounded_sm()
+        .border_1().border_color(rgb(if active { 0x69727d } else { 0x39414b }))
+        .bg(rgb(if active { 0x353d47 } else { 0x232a33 }))
         .text_sm()
-        .text_color(rgb(if active { 0xe0efff } else { TEXT }))
+        .text_color(rgb(if active { 0xf2f4f6 } else { 0xd4d9df }))
         .cursor_pointer()
         .child(label)
 }
@@ -526,22 +528,6 @@ impl Render for TrophyApp {
             self.session.as_ref()
                 .and_then(|s| s.set.trophies.iter().find(|t| t.id == id)))
             .cloned();
-        let open_button = div().id("open-folder")
-            .px_4().py_2()
-            .rounded_md().bg(rgb(ACCENT))
-            .text_color(rgb(BG))
-            .cursor_pointer()
-            .child("Open Folder")
-            .on_click(cx.listener(|this, _event, _window, cx| {
-                if let Some(path) = rfd::FileDialog::new()
-                    .set_title("Select PS3 trophy folder")
-                    .pick_folder()
-                {
-                    this.open_folder(path);
-                    cx.notify();
-                }
-            }));
-
         let sort_id = self.sort == SortKey::Id;
         let sort_name = self.sort == SortKey::Name;
         let sort_description = self.sort == SortKey::Description;
@@ -609,37 +595,45 @@ impl Render for TrophyApp {
             .flex_col()
             .bg(rgb(BG))
             .text_color(rgb(TEXT))
-            // Compact native application command bar. Actions do not compete
-            // with the trophy table for vertical space.
+            // A compact, neutral desktop command strip. Keep commands left,
+            // the active game identity right, and remove promotional branding.
             .child(
-                div().w_full().px_5().py_3().bg(rgb(SURFACE))
-                    .border_b_1().border_color(rgb(0x2e3a4b))
-                    .flex().items_center().justify_between().gap_4()
-                    .child(div().min_w_0().flex().items_center().gap_3()
-                        .child(div().w(px(46.)).h(px(46.))
-                            .rounded_md().bg(rgb(0x29384a))
-                            .when(self.game_icon.is_none(), |d|
-                                d.flex().items_center().justify_center()
-                                    .text_sm().text_color(rgb(ACCENT))
-                                    .font_weight(gpui::FontWeight::SEMIBOLD)
-                                    .child("PS3"))
-                            .when_some(self.game_icon.clone(), |d, image|
-                                d.child(gpui::img(image).w(px(46.)).h(px(46.)))))
-                        .child(div().min_w_0().flex().flex_col().gap_1()
-                            .child(div().text_lg().font_weight(gpui::FontWeight::SEMIBOLD)
-                                .overflow_hidden().child(title))
-                            .child(div().text_xs().text_color(rgb(MUTED))
-                                .child(format!("{format_label}  ·  {}",
-                                    self.session.as_ref().map(|s| s.set.npcommid.as_str())
-                                        .unwrap_or("Drop a trophy folder to begin"))))))
-                    .child(div().flex().items_center().gap_2()
-                        .child(open_button)
+                div().w_full().h(px(42.)).px_3().bg(rgb(0x191e25))
+                    .border_b_1().border_color(rgb(0x343b45))
+                    .flex().items_center().justify_between().gap_3()
+                    .child(div().flex().items_center().gap_1()
+                        .child(toolbar_button("Open...", false)
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                if let Some(path) = rfd::FileDialog::new()
+                                    .set_title("Select PS3 trophy folder")
+                                    .pick_folder()
+                                {
+                                    this.open_folder(path);
+                                    cx.notify();
+                                }
+                            })))
                         .child(toolbar_button(if self.dirty { "Save *" } else { "Save" }, self.dirty)
                             .on_click(cx.listener(|this, _, _, cx| this.save(cx))))
-                        .child(toolbar_button("Refresh", false)
+                        .child(div().w(px(1.)).h(px(18.)).mx_2()
+                            .bg(rgb(0x3d4650)))
+                        .child(toolbar_button("Reload", false)
                             .on_click(cx.listener(|this, _, _, cx| this.refresh_folder(cx))))
                         .child(toolbar_button("Close", false)
                             .on_click(cx.listener(|this, _, _, cx| this.close_folder(cx)))))
+                    .child(div().min_w_0().flex().items_center().gap_2()
+                        .when_some(self.game_icon.clone(), |d, image|
+                            d.child(gpui::img(image).w(px(24.)).h(px(24.))))
+                        .when(self.session.is_some(), |d|
+                            d.child(div().min_w_0().flex().items_center().gap_2()
+                                .child(div().min_w_0().overflow_hidden().text_sm()
+                                    .text_color(rgb(0xd2d7de)).child(title))
+                                .child(div().text_xs().text_color(rgb(0x89939f))
+                                    .child(format!("{format_label}  ·  {}",
+                                        self.session.as_ref().map(|s| s.set.npcommid.as_str())
+                                            .unwrap_or_default())))))
+                        .when(self.session.is_none(), |d|
+                            d.child(div().text_xs().text_color(rgb(0x89939f))
+                                .child("No trophy folder open"))))
             )
             // Keep the original PSN EXP distinct from merely obtained trophies.
             .child(
