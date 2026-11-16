@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use crate::{ps3::Ps3Working, trans::Trans};
 
 const MAGIC: u64 = 0x0000_0100_ad54_8f81;
 const EPOCH_DELTA_US: i64 = 62_135_596_800_000_000;
@@ -59,7 +60,7 @@ impl Grade {
         }
     }
 
-    fn type_id(self) -> u32 {
+    pub(crate) fn type_id(self) -> u32 {
         match self {
             Self::Platinum => 1,
             Self::Gold => 2,
@@ -267,6 +268,8 @@ pub struct TrophySession {
     raw_usr: Vec<u8>,
     original_usr: Vec<u8>,
     state_offsets: Vec<usize>,
+    native_ps3: Option<Ps3Working>,
+    transactions: Option<Trans>,
 }
 
 impl TrophySession {
@@ -275,10 +278,19 @@ impl TrophySession {
         let sfm = fs::read(folder.join("TROPCONF.SFM"))
             .with_context(|| format!("read {}", folder.join("TROPCONF.SFM").display()))?;
         let mut set = parse_tropconf(&sfm)?;
-        let raw_usr = fs::read(folder.join("TROPUSR.DAT"))
-            .with_context(|| format!("read {}", folder.join("TROPUSR.DAT").display()))?;
+        let native_ps3 = if set.format == Format::Ps3 {
+            Some(Ps3Working::open(folder).context("open and decrypt PS3 trophy folder")?)
+        } else { None };
+        let work_path = native_ps3.as_ref().map(|w| w.decrypted_path()).unwrap_or(folder);
+        let raw_usr = fs::read(work_path.join("TROPUSR.DAT"))
+            .with_context(|| format!("read {}", work_path.join("TROPUSR.DAT").display()))?;
         let state_offsets = read_dat(&raw_usr, &mut set)?;
-        Ok(Self { source: folder.to_path_buf(), set, original_usr: raw_usr.clone(), raw_usr, state_offsets })
+        let transactions = if native_ps3.is_some() {
+            Some(Trans::load(fs::read(work_path.join("TROPTRNS.DAT"))?,
+                &mut set.trophies).context("read PS3 TROPTRNS.DAT")?)
+        } else { None };
+        Ok(Self { source: folder.to_path_buf(), set, original_usr: raw_usr.clone(),
+            raw_usr, state_offsets, native_ps3, transactions })
     }
 
     pub fn state_record_count(&self) -> usize {
@@ -347,12 +359,17 @@ impl TrophySession {
         self.change_state(id, None)
     }
 
-    /// Save only RPCS3 DAT files for now; retail PS3 must be decrypted,
-    /// re-encrypted and PFD-resigned together. A refusal is safer than
-    /// pretending to implement signing without actual fixtures.
-    pub fn save_rpcs3_with_backup(&self) -> Result<PathBuf> {
-        ensure!(self.set.format == Format::Rpcs3,
-            "retail PS3 requires PFD re-signing; refusing an unsigned DAT write");
+    /// Save through the original PS3 PFD signing sequence or the RPCS3 DAT
+    /// writer, depending on the loaded trophy-set format.
+    pub fn save_with_backup(&self) -> Result<PathBuf> {
+        if let Some(working) = self.native_ps3.as_ref() {
+            let mut trans = self.transactions.as_ref()
+                .context("missing PS3 TROPTRNS transaction log")?.clone();
+            let raw_trans = trans.rebuild(&self.set.trophies)?;
+            let mut raw_usr = self.raw_usr.clone();
+            refresh_ps3_usr_metadata(&mut raw_usr, &self.set.trophies)?;
+            return working.save(&self.source, &self.original_usr, &raw_usr, raw_trans);
+        }
         let original = self.source.join("TROPUSR.DAT");
         let current = fs::read(&original).context("re-read original DAT")?;
         ensure!(current == self.original_usr,
@@ -384,6 +401,63 @@ impl TrophySession {
         ))?;
         Ok(backup)
     }
+
+    /// Kept as an alias for existing CLI/tests; use save_with_backup in new UI.
+    pub fn save_rpcs3_with_backup(&self) -> Result<PathBuf> {
+        self.save_with_backup()
+    }
+}
+
+/// Mirrors original TROPUSR.Save/UnlockTrophy counters, group bit fields,
+/// and update timestamp fields for native PS3 saves.
+fn refresh_ps3_usr_metadata(data: &mut [u8], trophies: &[Trophy]) -> Result<()> {
+    let n = be_u32(data, 8)? as usize;
+    ensure!(n < 128, "bad TROPUSR metadata table");
+    let mut table = std::collections::HashMap::new();
+    for ix in 0..n {
+        let at = 48 + ix * 32;
+        let kind = be_u32(data, at)?;
+        let offset = usize::try_from(be_u64(data, at + 16)?)?;
+        table.insert(kind, offset);
+    }
+    let tr = *table.get(&3).context("PS3 type3 record missing")?;
+    let list = *table.get(&5).context("PS3 type5 metadata missing")?;
+    let state = *table.get(&7).context("PS3 type7 counters missing")?;
+
+    let count = trophies.iter().filter(|t| t.obtained).count();
+    let value = u32::try_from(count)?.to_be_bytes();
+    let put = |data: &mut [u8], at: usize, bytes: &[u8]| -> Result<()> {
+        data.get_mut(at..at + bytes.len())
+            .context("PS3 metadata offset out of range")?
+            .copy_from_slice(bytes);
+        Ok(())
+    };
+    put(data, list + 16 + 112, &value)?;
+    put(data, state + 16, &value)?;
+
+    // TROPUSR type3 has its own little-endian achievement bitmap.
+    // Type5 bitmap is big-endian, matching the C# TROPHYParser serializer.
+    for word in 0..4 {
+        let mask = trophies.iter().filter(|t| t.obtained)
+            .filter(|t| (t.id / 32) as usize == word)
+            .fold(0u32, |bits, t| bits | (1u32 << (t.id % 32)));
+        put(data, tr + 16 + 64 + word * 4, &mask.to_le_bytes())?;
+        put(data, list + 16 + 128 + word * 4, &mask.to_be_bytes())?;
+    }
+    let last = trophies.iter().filter_map(|t| t.earned_us).max();
+    if let Some(last) = last {
+        let value = u64::try_from(last.checked_add(EPOCH_DELTA_US)
+            .context("PS3 timestamp overflow")?)?.to_be_bytes();
+        for at in [list + 16 + 64, list + 16 + 72] {
+            put(data, at, &value)?;
+        }
+    }
+    let now = u64::try_from(Utc::now().timestamp_micros()
+        .checked_add(EPOCH_DELTA_US).context("PS3 date overflow")?)?.to_be_bytes();
+    for at in [list + 16 + 32, list + 16 + 40] {
+        put(data, at, &now)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
