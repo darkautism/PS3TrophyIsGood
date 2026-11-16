@@ -1,46 +1,76 @@
-# PS3TrophyIsGood — Rust (experimental)
+# PS3TrophyIsGood — Rust migration branch
 
-This is an **independent rewrite** on the `rust` branch. The original C#/WinForms tree and its
-bottom promotional links are intentionally absent from this branch. The `master` branch is unchanged.
+**Status: experimental; NOT a 1:1 replacement for `master`.**
+The original WinForms application remains on `master` without changes.
+The `rust` branch has a new Git root tree, so no legacy C# source, old GUI submodules,
+bundled Windows pfdtool.exe, or bottom advertising/donation links are shipped here.
 
-## Goal
+## Technology
 
-A native, GPU-accelerated, no-JavaScript desktop trophy editor using the GPUI framework
-(the community-maintained GPUI CE distribution, derived from Zed's GPUI), targeting
-Windows, macOS and Linux. `trophy` is the pure-Rust core; the desktop frontend is an
-optional Cargo feature.
+- Rust 2024 with **GPUI CE** (community-maintained, Zed-derived native GPU UI).
+- Native folder picker, virtualized list, colored dark theme and trophy PNG icons.
+- No JavaScript, WebView, Tauri, egui, HTML or tracking.
+- Intended targets: Windows, Linux, macOS (see CI; runtime launch still needs testing).
 
-### Implemented / in progress
+## Current implemented functions
 
-- Native GPUI trophy table with a type column (Platinum / Gold / Silver / Bronze).
-- PS3 vs RPCS3 auto-detection from `TROPCONF.SFM`; **no RPCS3 rejection checkbox**.
-- Trophy metadata from SFM, earned/synced/time state from TROPUSR.DAT, with defensive bounds checking.
-- Chronological sorting and status/type filtering in the UI.
-- CLI read-only inspection for headless testing.
-- Original PS3 encrypted data require a compatible external pfdtool and successful validation.
+| Feature | Current Rust status |
+| --- | --- |
+| `TROPCONF.SFM` trophy names, descriptions, grades, groups and hidden state | Implemented |
+| PS3/RPCS3 detection | Auto-detect from SFM XML offset; **no manual RPCS3 checkbox** |
+| RPCS3 `TROPUSR.DAT` reading | Implemented with type/ID/size checks; synthetic tests |
+| Trophy list, GPU image icons, virtual scrolling, sorting and obtained/locked filter | Implemented in GPUI |
+| View status, trophy type, UTC earned time and synced state | Implemented |
+| Selected trophy unlock/lock | Implemented in memory and via GUI; synced trophies refused |
+| Assign a specific timestamp | Implemented in CLI (`set-time`); UI date picker pending |
+| RPCS3 DAT save with backup | Implemented; refuses to overwrite changed original; real sample testing pending |
+| Retail PS3 decryption/re-encryption and `PARAM.PFD` signing | **Not implemented**; writes refused |
+| `TROPTRNS.DAT` editing and original PS3 account-profile handling | Not implemented |
+| Copy From PSN Trophy Leaders and PSNProfiles | Not implemented |
+| Cloudflare/FlareSolverr and Smart Copy | Not implemented |
+| Random times, other batch operations, localization | Not implemented |
+| 1:1 functional parity | **Not yet achieved** |
 
-### Not yet claimed as equivalent to C# master
+This table documents migration gaps rather than hiding them. Older features are still on
+`master` until independently reimplemented and tested in Rust. Production PS3 trophy
+files must never be used as the first validation data.
 
-**Do not replace the working application yet.** This is a migration branch, not a 1:1 release.
-PS3 signing/encryption, complete TROPTRNS rewrite, account profile editing, batch operations,
-Smart Copy / the two web importers / Cloudflare, and full interactive time editing need
-comparison against real fixtures. The GUI may change while GPUI APIs are stabilized.
+## Build and run
 
-## Build
+Rust stable with host GUI platform development headers / SDK:
 
 ```sh
 cargo test --no-default-features
-cargo run --no-default-features -- inspect /path/to/RPCS3/trophy/folder
-cargo run --features gui
+cargo run --no-default-features -- inspect /path/to/trophy/folder
+cargo run -- /path/to/trophy/folder
 ```
 
-The graphical version includes a directory chooser; `TROPUSR.DAT` must be readable
-(or provide a decrypted working copy for PS3). Do not edit your only copy of a trophy set.
+GUI offers **Open Trophy Folder**, **Unlock Now**, **Lock**, **Save RPCS3**,
+clickable **Trophy Name**, **Type** and **Obtainment Time** headers, and
+**All / Obtained / Locked** filters. Select a row first before editing.
+Saving RPCS3 produces a `TROPUSR.DAT.bak-...` backup and rejects retail PS3 files.
 
-### License and dependencies
+CLI for explicit RFC3339 UTC time editing, with a backup:
 
-Apache-2.0. GPUI CE is derived from Zed GPUI and is Apache-2.0. PFD/SFO files
-have their own formats and must be separately tested with cross-platform pfdtool
-(see https://github.com/bucanero/pfd_sfo_tools).
+```sh
+cargo run --no-default-features -- set-time /path/to/rpcs3/trophy/folder 1 2026-11-16T12:00:00Z
+cargo run --no-default-features -- lock /path/to/rpcs3/trophy/folder 1
+```
 
-No advertisements, donation links, JavaScript, WebView, or Tauri are included.
+## Safety and parity plan
+
+1. Verify RPCS3 parsing and modified DAT files with real archived fixture sets, including
+   SFM translations, hidden trophies, platinum, synchronized records and DLC.
+2. Port and test `TROPTRNS.DAT` alongside `TROPUSR.DAT`; integrate cross-platform
+   pfdtool from [bucanero/pfd_sfo_tools](https://github.com/bucanero/pfd_sfo_tools)
+   before enabling retail PS3 saves.
+3. Port Copy From, strict trophy identity validation, Smart Copy, profiles, randomized
+   timestamps and other original workflows.
+4. Run behavior comparisons against original C# program and produce downloadable
+   Win/macOS/Linux binaries.
+
+`Cargo.lock` should be generated and committed after platform checks stabilize.
+
+## License
+
+Apache-2.0. The GPUI CE fork is packaged under its own Apache-2.0 terms.
