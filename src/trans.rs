@@ -34,7 +34,7 @@ struct Entry {
 
 /// A parsed, editable version of the trophy transaction log.
 /// Non-edited header and record bytes are preserved.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Trans {
     raw: Vec<u8>,
     entries: HashMap<u32, Entry>,
