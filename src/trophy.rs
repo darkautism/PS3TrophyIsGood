@@ -459,6 +459,58 @@ impl TrophySession {
         result
     }
 
+    /// Apply safely matched Copy From timestamps by real Trophy ID.
+    /// Leave trophies not present in a different DLC/version source unchanged.
+    /// The synchronized entries must never be modified. The edit is atomic
+    /// in memory: a failed timestamp or Platinum prerequisite reverts all DATs.
+    pub fn apply_copy_from(&mut self, mapping: &[(u32, Option<i64>)]) -> Result<usize> {
+        let mut used_ids = HashSet::new();
+        let mut targets = Vec::new();
+        for &(id, time) in mapping {
+            ensure!(used_ids.insert(id), "Copy From repeated trophy ID {id}");
+            let existing = self.set.trophies.iter().find(|t| t.id == id)
+                .with_context(|| format!("Copy From unknown local trophy ID {id}"))?;
+            if existing.synced {
+                continue; // Always keep PSN-synced entries unchanged.
+            }
+            if existing.earned_us != time || existing.obtained != time.is_some() {
+                targets.push((id, time, existing.grade, existing.group_id));
+            }
+        }
+        let before_usr = self.raw_usr.clone();
+        let before_trophies = self.set.trophies.clone();
+        let result = (|| {
+            // Lock obtained Platinum before locking any prerequisite trophy;
+            // then update base trophies before unlocking Platinum.
+            for &(id, time, grade, _) in &targets {
+                if time.is_none() && grade == Grade::Platinum {
+                    self.lock(id)?;
+                }
+            }
+            for &(id, time, grade, _) in &targets {
+                if time.is_none() && grade != Grade::Platinum {
+                    self.lock(id)?;
+                }
+            }
+            let mut unlocks: Vec<_> = targets.iter()
+                .filter_map(|&(id, time, grade, gid)| time.map(|t| (id, t, grade, gid)))
+                .collect();
+            // Actual earned times are not local Trophy IDs: sort to keep the
+            // original chronology, always enforcing the Platinum prerequisite.
+            unlocks.sort_by_key(|&(id, date, grade, gid)|
+                (grade == Grade::Platinum, gid != 0, date, id));
+            for (id, at, _, _) in unlocks {
+                self.unlock_at_utc(id, at)?;
+            }
+            Ok(targets.len())
+        })();
+        if result.is_err() {
+            self.raw_usr = before_usr;
+            self.set.trophies = before_trophies;
+        }
+        result
+    }
+
     /// Save through the original PS3 PFD signing sequence or the RPCS3 DAT
     /// writer, depending on the loaded trophy-set format.
     pub fn save_with_backup(&self) -> Result<PathBuf> {
