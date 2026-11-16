@@ -237,6 +237,7 @@ pub struct TrophySession {
     pub source: PathBuf,
     pub set: TrophySet,
     raw_usr: Vec<u8>,
+    original_usr: Vec<u8>,
     state_offsets: Vec<usize>,
 }
 
@@ -249,7 +250,7 @@ impl TrophySession {
         let raw_usr = fs::read(folder.join("TROPUSR.DAT"))
             .with_context(|| format!("read {}", folder.join("TROPUSR.DAT").display()))?;
         let state_offsets = read_dat(&raw_usr, &mut set)?;
-        Ok(Self { source: folder.to_path_buf(), set, raw_usr, state_offsets })
+        Ok(Self { source: folder.to_path_buf(), set, original_usr: raw_usr.clone(), raw_usr, state_offsets })
     }
 
     pub fn state_record_count(&self) -> usize {
@@ -326,8 +327,8 @@ impl TrophySession {
             "retail PS3 requires PFD re-signing; refusing an unsigned DAT write");
         let original = self.source.join("TROPUSR.DAT");
         let current = fs::read(&original).context("re-read original DAT")?;
-        ensure!(current.len() == self.raw_usr.len(),
-            "original DAT changed on disk; reopen before saving");
+        ensure!(current == self.original_usr,
+            "original DAT changed on disk; reopen before saving to avoid lost updates");
 
         // Compare outside the intentionally changed state bytes: open the
         // original for a fresh full structural check before replacement.
@@ -380,6 +381,80 @@ mod tests {
             assert_eq!(set.trophies[1].grade, Grade::Bronze);
             assert!(set.trophies[1].hidden);
         }
+    }
+
+    fn fake_rpcs3_dat() -> Vec<u8> {
+        let mut out = vec![0_u8; 48 + 2 * 32];
+        out[..8].copy_from_slice(&MAGIC.to_le_bytes());
+        out[8..12].copy_from_slice(&2_u32.to_be_bytes());
+        let mut type_records = Vec::new();
+        let mut state_records = Vec::new();
+        for id in 0..2_u32 {
+            let mut typ = [0_u8; 96];
+            typ[0..4].copy_from_slice(&4_u32.to_be_bytes());
+            typ[4..8].copy_from_slice(&80_u32.to_be_bytes());
+            typ[8..12].copy_from_slice(&id.to_be_bytes());
+            typ[16..20].copy_from_slice(&id.to_be_bytes());
+            typ[20..24].copy_from_slice(&(if id == 0 { 1_u32 } else { 4_u32 }).to_be_bytes());
+            type_records.extend_from_slice(&typ);
+
+            let mut state = [0_u8; 112];
+            state[0..4].copy_from_slice(&6_u32.to_be_bytes());
+            state[4..8].copy_from_slice(&96_u32.to_be_bytes());
+            state[8..12].copy_from_slice(&id.to_be_bytes());
+            state[16..20].copy_from_slice(&id.to_be_bytes());
+            if id == 1 {
+                state[23] = 1; // obtained flag
+                let micros = (EPOCH_DELTA_US + 1_700_000_000_000_000) as u64;
+                state[32..40].copy_from_slice(&micros.to_be_bytes());
+                state[40..48].copy_from_slice(&micros.to_be_bytes());
+            }
+            state_records.extend_from_slice(&state);
+        }
+        out.extend_from_slice(&type_records);
+        out.extend_from_slice(&state_records);
+        out
+    }
+
+    #[test]
+    fn rpcs3_binary_state_and_grades_parse() {
+        let mut set = parse_tropconf(&xml(Format::Rpcs3)).unwrap();
+        let offsets = read_dat(&fake_rpcs3_dat(), &mut set).unwrap();
+        assert_eq!(offsets.len(), 2);
+        assert!(!set.trophies[0].obtained);
+        assert!(set.trophies[1].obtained);
+        assert_eq!(set.trophies[1].earned_us, Some(1_700_000_000_000_000));
+    }
+
+    #[test]
+    fn rpc3_trophy_edit_is_backed_up_and_reloads() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
+        fs::write(dir.path().join("TROPUSR.DAT"), fake_rpcs3_dat()).unwrap();
+
+        let mut session = TrophySession::open(dir.path()).unwrap();
+        assert!(session.unlock_at_utc(0, 1_700_000_001_000_000).is_ok());
+        let backup = session.save_rpcs3_with_backup().unwrap();
+        assert!(backup.exists());
+        let reloaded = TrophySession::open(dir.path()).unwrap();
+        assert_eq!(reloaded.set.trophies[0].earned_us, Some(1_700_000_001_000_000));
+        assert!(reloaded.set.trophies[0].obtained);
+        assert!(reloaded.set.trophies[1].obtained);
+
+        // A second write from the same session must not overwrite a newer DAT.
+        assert!(session.save_rpcs3_with_backup().is_err());
+    }
+
+    #[test]
+    fn refuses_to_unlock_platinum_before_base_game() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
+        let mut dat = fake_rpcs3_dat();
+        let state_offset_id1 = 112 + 96 * 2 + 112;
+        dat[state_offset_id1 + 7] = 0;
+        fs::write(dir.path().join("TROPUSR.DAT"), dat).unwrap();
+        let mut session = TrophySession::open(dir.path()).unwrap();
+        assert!(session.unlock_at_utc(0, 1_700_000_001_000_000).is_err());
     }
 
     #[test]
