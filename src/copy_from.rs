@@ -34,6 +34,48 @@ impl CopySource {
     }
 }
 
+/// Infer the website from a URL, or from the trophy identities inside a
+/// previously saved HTML page. Never guess based on local trophy numbering.
+pub fn detect_copy_source(reference: &str, saved_html: Option<&str>) -> Result<CopySource> {
+    if let Ok(url) = reqwest::Url::parse(reference) {
+        ensure!(url.scheme() == "https", "Copy From requires an HTTPS trophy URL");
+        let host = url.host_str().unwrap_or("").trim_start_matches("www.");
+        return match host.to_ascii_lowercase().as_str() {
+            "psnprofiles.com" => Ok(CopySource::PsnProfiles),
+            "psntrophyleaders.com" => Ok(CopySource::PsnTrophyLeaders),
+            _ => bail!("unsupported Copy From website: {host}"),
+        };
+    }
+    let html = saved_html.context("expected a supported trophy URL or a saved HTML file")?;
+    let profile_rows = Html::parse_document(html)
+        .select(&select("a[href^='/trophy/']")).count();
+    let leaders_rows = Html::parse_document(html)
+        .select(&select("tr")).filter(|row| {
+            row.value().attr("class").is_some_and(|c|
+                c.split_whitespace().any(|x| x.to_ascii_lowercase().starts_with("trophyvalue")))
+        }).count();
+    match (profile_rows > 0, leaders_rows > 0) {
+        (true, false) => Ok(CopySource::PsnProfiles),
+        (false, true) => Ok(CopySource::PsnTrophyLeaders),
+        (false, false) => bail!("saved HTML does not contain PSNProfiles or PSN Trophy Leaders trophy rows"),
+        (true, true) => bail!("saved HTML contains two different trophy formats; source is ambiguous"),
+    }
+}
+
+/// The GUI's primary workflow: a single URL/HTML field, with no manual
+/// source selector. Returns the detected source for an accurate audit log.
+pub fn load_copy_page_auto(reference: &str) -> Result<(CopySource, String)> {
+    if std::path::Path::new(reference).is_file() {
+        let html = std::fs::read_to_string(reference)
+            .with_context(|| format!("read saved trophy HTML: {reference}"))?;
+        let source = detect_copy_source(reference, Some(&html))?;
+        return Ok((source, html));
+    }
+    let source = detect_copy_source(reference, None)?;
+    let html = load_copy_page(source, reference)?;
+    Ok((source, html))
+}
+
 #[derive(Debug, Clone)]
 pub struct RemoteTrophy {
     pub remote_id: u32,
@@ -72,7 +114,7 @@ fn grade_from(value: &str) -> Option<Grade> {
 /// time. The site 0 (not obtained) maps to None.
 fn psntl_timestamp(element: ElementRef<'_>) -> Result<Option<i64>> {
     let value = element.select(&select("span.sort")).next()
-        .map(text_of)
+        .map(text_of).filter(|s| !s.is_empty())
         .or_else(|| element.value().attr("data-sort").map(ToOwned::to_owned))
         .or_else(|| element.value().attr("data-order").map(ToOwned::to_owned))
         .context("PSNTL row missing sortable earned time")?;
@@ -196,38 +238,75 @@ pub fn load_copy_page(source: CopySource, path_or_url: &str) -> Result<String> {
         "Copy From source {:?} does not match {host}", source);
 
     let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(90))
-        .user_agent("Mozilla/5.0 PS3TrophyIsGood-Rust/0.1")
+        .timeout(std::time::Duration::from_secs(45))
+        .user_agent("Mozilla/5.0 (compatible; PS3TrophyIsGood/0.1)")
         .build()?;
-    if let Ok(endpoint) = std::env::var("FLARESOLVERR_URL") {
-        let endpoint = format!("{}/v1", endpoint.trim_end_matches('/'));
-        let request = serde_json::json!({
-            "cmd": "request.get",
-            "url": url.as_str(),
-            "maxTimeout": 75_000
-        });
-        let response: serde_json::Value = client.post(&endpoint)
-            .json(&request).send()
-            .context("contact FlareSolverr")?
-            .error_for_status()?.json()
-            .context("parse FlareSolverr JSON response")?;
-        ensure!(response.get("status").and_then(|v| v.as_str()) == Some("ok"),
-            "FlareSolverr could not retrieve trophy page: {response}");
-        let html = response.pointer("/solution/response")
-            .and_then(|v| v.as_str())
-            .context("FlareSolverr returned no HTML response")?;
-        return Ok(html.to_owned());
+
+    // The original app manages FlareSolverr automatically. Try normal HTTPS
+    // first for unrestricted pages, then an already running local helper.
+    // Never quietly treat a Cloudflare page as a zero-trophy result.
+    let direct = client.get(url.clone()).send()
+        .and_then(|response| response.error_for_status())
+        .and_then(|response| response.text());
+    if let Ok(ref html) = direct {
+        if contains_trophy_rows(source, html) || !looks_like_challenge(html) {
+            return Ok(html.clone());
+        }
     }
-    let response = client.get(url).send()
-        .context("fetch trophy page (configure FLARESOLVERR_URL if the website uses Cloudflare)")?
-        .error_for_status().context("trophy website returned an HTTP error")?;
-    response.text().context("decode trophy page HTML")
+
+    let helper = std::env::var("FLARESOLVERR_URL")
+        .unwrap_or_else(|_| "http://127.0.0.1:8191".into());
+    let endpoint = if helper.trim_end_matches('/').ends_with("/v1") {
+        helper.trim_end_matches('/').to_string()
+    } else {
+        format!("{}/v1", helper.trim_end_matches('/'))
+    };
+    let request = serde_json::json!({
+        "cmd": "request.get",
+        "url": url.as_str(),
+        "maxTimeout": 75_000
+    });
+    let response = client.post(&endpoint).json(&request).send()
+        .with_context(|| format!(
+            "Cannot fetch trophy page directly and FlareSolverr is not reachable at {endpoint}. \
+             Start FlareSolverr or import saved trophy HTML"
+        ))?
+        .error_for_status().context("FlareSolverr HTTP error")?;
+    let response: serde_json::Value = response.json()
+        .context("parse FlareSolverr JSON response")?;
+    ensure!(response.get("status").and_then(|v| v.as_str()) == Some("ok"),
+        "FlareSolverr failed to retrieve trophy page: {response}");
+    let html = response.pointer("/solution/response")
+        .and_then(|v| v.as_str())
+        .context("FlareSolverr returned no HTML response")?;
+    Ok(html.to_owned())
+}
+
+fn contains_trophy_rows(source: CopySource, html: &str) -> bool {
+    let doc = Html::parse_document(html);
+    match source {
+        CopySource::PsnProfiles =>
+            doc.select(&select("a[href^='/trophy/']")).next().is_some(),
+        CopySource::PsnTrophyLeaders =>
+            doc.select(&select("tr")).any(|row|
+                row.value().attr("class").is_some_and(|c|
+                    c.split_whitespace().any(|x| x.to_ascii_lowercase().starts_with("trophyvalue")))),
+    }
+}
+
+fn looks_like_challenge(html: &str) -> bool {
+    let lower = html.to_ascii_lowercase();
+    ["cf-challenge", "cf-chl-", "challenge-platform", "cf-turnstile",
+     "verify you are human", "checking your browser"]
+        .iter().any(|marker| lower.contains(marker))
+        || (lower.contains("just a moment") && lower.contains("cloudflare"))
 }
 
 pub fn parse_copy_page(source: CopySource, html: &str) -> Result<Vec<RemoteTrophy>> {
-    let lower = html.to_ascii_lowercase();
-    ensure!(!lower.contains("cf-challenge") && !lower.contains("just a moment..."),
-        "Cloudflare verification page received, not a trophy list");
+    // A trophy page may contain leftover Cloudflare scripts after successful
+    // verification. Only reject challenges when there is no trophy content.
+    ensure!(contains_trophy_rows(source, html) || !looks_like_challenge(html),
+        "Cloudflare verification page received without any trophy rows");
     match source {
         CopySource::PsnTrophyLeaders => parse_psntl(html),
         CopySource::PsnProfiles => parse_profiles(html),
@@ -352,7 +431,9 @@ pub fn smart_copy(
             rng.gen_range(opts.min_jitter_seconds..opts.max_jitter_seconds)
         }
     };
-    let mut delta = base_delta.checked_add(jitter(&mut rng) * 1_000_000)
+    let first_jitter = jitter(&mut rng).checked_mul(1_000_000)
+        .context("Smart Copy initial jitter overflow")?;
+    let mut delta = base_delta.checked_add(first_jitter)
         .context("Smart Copy delta overflow")?;
     let mut order: Vec<usize> = (0..mapping.len()).collect();
     order.sort_by_key(|&ix| mapping[ix].1);
@@ -362,8 +443,10 @@ pub fn smart_copy(
             .context("Smart Copy timestamp overflow")?);
         if let Some(&next) = order.get(position + 1) {
             if let (Some(now), Some(future)) = (mapping[ix].1, mapping[next].1) {
-                if future - now > 60_000_000 {
-                    delta = delta.checked_add(jitter(&mut rng) * 1_000_000)
+                if future.checked_sub(now).is_some_and(|gap| gap > 60_000_000) {
+                    let extra = jitter(&mut rng).checked_mul(1_000_000)
+                        .context("Smart Copy additional jitter overflow")?;
+                    delta = delta.checked_add(extra)
                         .context("Smart Copy additional delta overflow")?;
                 }
             }
@@ -418,6 +501,48 @@ mod tests {
         }];
         let local = vec![local(0, "Duplicate", Grade::Silver), local(1, "Duplicate", Grade::Silver)];
         assert!(map_remote_to_local(&local, &r).is_err());
+    }
+
+    #[test]
+    fn auto_detects_both_live_urls_and_saved_html() {
+        assert_eq!(detect_copy_source(
+            "https://psnprofiles.com/trophies/999-game/user", None).unwrap(),
+            CopySource::PsnProfiles);
+        assert_eq!(detect_copy_source(
+            "https://psntrophyleaders.com/user/view/user/game", None).unwrap(),
+            CopySource::PsnTrophyLeaders);
+        assert!(detect_copy_source("https://example.com/trophies/foo", None).is_err());
+        assert!(detect_copy_source("http://psnprofiles.com/trophies/1", None).is_err());
+        assert_eq!(detect_copy_source("saved.html", Some(
+            "<tr class='trophyvalue2'><td>abc</td></tr>"
+        )).unwrap(), CopySource::PsnTrophyLeaders);
+        assert_eq!(detect_copy_source("saved.html", Some(
+            "<tr><td><a href='/trophy/10-game/2-name'>Title</a></td></tr>"
+        )).unwrap(), CopySource::PsnProfiles);
+    }
+
+    #[test]
+    fn solved_cloudflare_page_with_real_rows_is_not_rejected() {
+        let html = r#"<script>window.cf-challenge = true;</script>
+            <table><tr class="trophyvalue12"><td class="trophytype">0</td>
+            <td><a id="trophytitle12">First</a></td>
+            <td class="date_earned" data-sort="0"></td></tr></table>"#;
+        let items = parse_copy_page(CopySource::PsnTrophyLeaders, html).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].earned_us, None);
+        assert!(parse_copy_page(CopySource::PsnTrophyLeaders,
+            "<html><title>Just a moment... Cloudflare</title></html>").is_err());
+    }
+
+    #[test]
+    fn smart_copy_rejects_overflow_instead_of_panicking() {
+        let mut mapping = [(0, Some(1_700_000_000_000_000))];
+        let err = smart_copy(&mut mapping, SmartCopyOptions {
+            years: 0, months: 0, days: 0,
+            min_jitter_seconds: i64::MAX,
+            max_jitter_seconds: i64::MAX,
+        }).unwrap_err();
+        assert!(err.to_string().contains("overflow"));
     }
 
     #[test]
