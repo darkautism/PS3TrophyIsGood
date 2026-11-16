@@ -653,6 +653,7 @@ impl Render for TrophyApp {
                                         let Some(trophy) = this.session.as_ref()
                                             .and_then(|s| s.set.trophies.get(ix)).cloned() else { continue };
                                         let id = trophy.id;
+                                        let obtained = trophy.obtained;
                                         let selected = this.selected_id == Some(id);
                                         let icon = this.icons.get(&id).cloned();
                                         let row = div().id(("trophy", id))
@@ -676,9 +677,16 @@ impl Render for TrophyApp {
                                                 .child(format_timestamp(trophy.earned_us)))
                                             .child(div().w(px(72.)).text_color(rgb(MUTED))
                                                 .child(if trophy.group_id == 0 { "Base".into() } else { format!("DLC {}", trophy.group_id) }))
-                                            .on_click(cx.listener(move |this, _, _, cx| {
-                                                this.select_trophy(id, cx);
-                                            }));
+                                            .on_click(cx.listener(move |this, event: &gpui::ClickEvent, _, cx| {
+                                                 this.select_trophy(id, cx);
+                                                 if event.click_count() >= 2 {
+                                                     if obtained {
+                                                         this.lock_selected(cx);
+                                                     } else {
+                                                         this.unlock_selected(cx);
+                                                     }
+                                                 }
+                                             }));
                                         elements.push(row);
                                     }
                                     elements
