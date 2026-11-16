@@ -508,7 +508,6 @@ fn toolbar_button(label: &'static str, active: bool) -> gpui::Stateful<gpui::Div
 
 impl Render for TrophyApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let loaded = self.session.is_some();
         let title = self.session.as_ref()
             .map(|s| s.set.title.clone())
             .unwrap_or_else(|| "PS3TrophyIsGood".to_string());
@@ -707,7 +706,11 @@ impl Render for TrophyApp {
                                         let row = div().id(("trophy", id))
                                             .h(px(50.)).w_full()
                                             .px_3().flex().items_center().gap_2()
-                                            .bg(rgb(if selected { 0x29466a } else if index % 2 == 0 { BG } else { 0x151923 }))
+                                            .bg(rgb(if selected {
+                                                0x29466a
+                                            } else if trophy.synced {
+                                                0x30232c // Preserve the original visually distinct PSN-sync state.
+                                            } else if index % 2 == 0 { BG } else { 0x151d29 }))
                                             .border_b_1().border_color(rgb(0x242a34))
                                             .text_sm()
                                             .cursor_pointer()
@@ -719,12 +722,16 @@ impl Render for TrophyApp {
                                             .child(div().w(px(280.)).overflow_hidden().text_color(rgb(MUTED)).child(trophy.description.clone()))
                                             .child(div().w(px(78.)).text_color(rgb(match trophy.grade { ps3trophyisgood::Grade::Platinum => 0xf4cce2, ps3trophyisgood::Grade::Gold => 0xf9d98a, ps3trophyisgood::Grade::Silver => 0xd1daec, ps3trophyisgood::Grade::Bronze => 0xddac7e })).child(trophy.grade.label()))
                                             .child(div().w(px(58.)).child(if trophy.hidden { "Yes" } else { "No" }))
-                                            .child(div().w(px(55.)).child(if trophy.obtained { "Yes" } else { "No" }))
-                                            .child(div().w(px(62.)).child(if trophy.synced { "Yes" } else { "No" }))
+                                            .child(div().w(px(55.))
+                                                .text_color(rgb(if trophy.obtained { 0x93d9b9 } else { MUTED }))
+                                                .child(if trophy.obtained { "Yes" } else { "No" }))
+                                            .child(div().w(px(62.))
+                                                .text_color(rgb(if trophy.synced { 0xe7afc0 } else { MUTED }))
+                                                .child(if trophy.synced { "Yes" } else { "No" }))
                                             .child(div().w(px(190.)).text_color(rgb(if trophy.obtained { TEXT } else { MUTED }))
                                                 .child(format_timestamp(trophy.earned_us)))
                                             .child(div().w(px(72.)).text_color(rgb(MUTED))
-                                                .child(if trophy.group_id == 0 { "Base".into() } else { format!("DLC {}", trophy.group_id) }))
+                                                .child(if trophy.group_id == 0 { "BaseGame".into() } else { format!("DLC{}", trophy.group_id) }))
                                             .on_click(cx.listener(move |this, event: &gpui::ClickEvent, _, cx| {
                                                  this.select_trophy(id, cx);
                                                  if event.click_count() >= 2 {
@@ -832,8 +839,8 @@ impl Render for TrophyApp {
                     .w_full().px_5().py_2()
                     .bg(rgb(SURFACE))
                     .text_sm().text_color(rgb(MUTED))
-                    .child(if loaded {
-                        self.status.clone()
+                    .child(if self.dirty {
+                        format!("UNSAVED CHANGES  ·  {}", self.status)
                     } else {
                         self.status.clone()
                     })
