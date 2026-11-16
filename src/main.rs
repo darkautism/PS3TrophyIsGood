@@ -6,7 +6,7 @@ mod gui;
 use anyhow::{Context, Result};
 use ps3trophyisgood::{
     TrophySession, format_timestamp, CopySource, SmartCopyOptions,
-    load_copy_page, parse_copy_page, map_remote_to_local, smart_copy,
+    load_copy_page, load_copy_page_auto, parse_copy_page, map_remote_to_local, smart_copy,
 };
 use std::path::PathBuf;
 
@@ -93,10 +93,17 @@ fn main() -> Result<()> {
         }
         Some("copy-from") => {
             let folder = PathBuf::from(args.next().context("expected trophy folder")?);
-            let source_name = args.next().context("expected psnprofiles or psntl")?;
-            let source = CopySource::parse(&source_name.to_string_lossy())?;
-            let target = args.next().context("expected trophy page URL or saved HTML file")?;
-            let html = load_copy_page(source, &target.to_string_lossy())?;
+            // Accept the original explicit-source syntax and a simpler
+            // automatic URL/HTML syntax, consistent with the desktop dialog.
+            let source_or_target = args.next()
+                .context("expected trophy URL/HTML or psnprofiles|psntl followed by URL/HTML")?;
+            let (source, html) =
+                if let Ok(source) = CopySource::parse(&source_or_target.to_string_lossy()) {
+                    let target = args.next().context("expected trophy URL or HTML")?;
+                    (source, load_copy_page(source, &target.to_string_lossy())?)
+                } else {
+                    load_copy_page_auto(&source_or_target.to_string_lossy())?
+                };
             let remote = parse_copy_page(source, &html)?;
             let mut session = TrophySession::open(folder)?;
             let mut mapping = map_remote_to_local(&session.set.trophies, &remote)?;
@@ -115,13 +122,18 @@ fn main() -> Result<()> {
                     years, months, days, min_jitter_seconds, max_jitter_seconds,
                 })?;
             }
+            let skipped_synced = mapping.iter().filter(|(id, time)|
+                session.set.trophies.iter().find(|t| t.id == *id)
+                    .is_some_and(|t| t.synced && t.earned_us != *time)
+            ).count();
             let changed = session.apply_copy_from(&mapping)?;
             if changed == 0 {
-                println!("Copy From matched {} trophies; no unsynchronized states needed modification.", mapping.len());
+                println!("Copy From matched {} trophies; no edits. {} PSN-synced trophies were protected.",
+                    mapping.len(), skipped_synced);
             } else {
                 let backup = session.save_with_backup()?;
-                println!("Copy From matched {} trophies and updated {changed}. Originals backed up at {}",
-                    mapping.len(), backup.display());
+                println!("Copy From matched {} trophies and updated {changed}; {} PSN-synced entries preserved. Originals backed up at {}",
+                    mapping.len(), skipped_synced, backup.display());
             }
             Ok(())
         }
@@ -145,6 +157,7 @@ Usage:
   ps3trophyisgood instant-platinum <folder> [<start RFC3339>] [<end RFC3339>]
   ps3trophyisgood clear <folder>  clear unsynced trophy timeline tail
   ps3trophyisgood resign-profile <folder> <profile.sfo>
+  ps3trophyisgood copy-from <folder> <URL|saved.html> [--smart <years> <months> <days> <minSeconds> <maxSeconds>]
   ps3trophyisgood copy-from <folder> <psnprofiles|psntl> <URL|saved.html> [--smart <years> <months> <days> <minSeconds> <maxSeconds>]");
             Ok(())
         }
