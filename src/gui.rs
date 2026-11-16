@@ -226,13 +226,60 @@ impl TrophyApp {
         cx.notify();
     }
 
+    fn select_trophy(&mut self, id: u32, cx: &mut Context<Self>) {
+        self.selected_id = Some(id);
+        let timestamp = self.session.as_ref()
+            .and_then(|s| s.set.trophies.iter().find(|t| t.id == id))
+            .and_then(|t| t.earned_us);
+        let date = timestamp
+            .and_then(chrono::DateTime::<chrono::Utc>::from_timestamp_micros)
+            .unwrap_or_else(chrono::Utc::now)
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        self.time_input.update(cx, |input, cx| input.emplace(&date, cx));
+        cx.notify();
+    }
+
+    fn apply_selected_time(&mut self, cx: &mut Context<Self>) {
+        let Some(id) = self.selected_id else {
+            self.status = "Select a trophy to edit its obtainment time.".into();
+            cx.notify();
+            return;
+        };
+        let typed = self.time_input.read(cx).as_str().trim().to_owned();
+        let parsed = chrono::DateTime::parse_from_rfc3339(&typed)
+            .map(|time| time.timestamp_micros());
+        match (self.session.as_mut(), parsed) {
+            (_, Err(_)) => {
+                self.status = "Invalid timestamp. Enter ISO-8601 with a timezone, e.g. 2026-11-16T12:00:00Z.".into();
+            }
+            (Some(session), Ok(micros)) => match session.unlock_at_utc(id, micros) {
+                Ok(()) => {
+                    self.dirty = true;
+                    self.status = format!("Trophy #{id} timestamp updated in memory; click Save.");
+                    self.rebuild();
+                }
+                Err(error) => self.status = format!("Cannot change trophy #{id}: {error:#}"),
+            },
+            (None, Ok(_)) => self.status = "Open a trophy folder first.".into(),
+        }
+        cx.notify();
+    }
+
     fn instant_platinum(&mut self, cx: &mut Context<Self>) {
         if let Some(session) = self.session.as_mut() {
             // The original default random interval starts on 2008-01-01 and
             // ends at the current time; native PSN sync times tighten the
             // interval in the data layer.
-            let now = chrono::Utc::now().timestamp_micros();
-            match session.instant_platinum(1_199_145_600_000_000, now) {
+            let parse = |s: &str| chrono::DateTime::parse_from_rfc3339(s.trim())
+                .map(|date| date.timestamp_micros());
+            let start = parse(self.random_start_input.read(cx).as_str());
+            let end = parse(self.random_end_input.read(cx).as_str());
+            let (Ok(start), Ok(end)) = (start, end) else {
+                self.status = "Invalid random time interval: enter ISO-8601 dates with timezone.".into();
+                cx.notify();
+                return;
+            };
+            match session.instant_platinum(start, end) {
                 Ok(count) => {
                     self.status = format!("{count} trophies unlocked in memory. Click Save to persist.");
                     if count > 0 { self.dirty = true; }
@@ -503,8 +550,7 @@ impl Render for TrophyApp {
                                             .child(div().w(px(72.)).text_color(rgb(MUTED))
                                                 .child(if trophy.group_id == 0 { "Base".into() } else { format!("DLC {}", trophy.group_id) }))
                                             .on_click(cx.listener(move |this, _, _, cx| {
-                                                this.selected_id = Some(id);
-                                                cx.notify();
+                                                this.select_trophy(id, cx);
                                             }));
                                         elements.push(row);
                                     }
