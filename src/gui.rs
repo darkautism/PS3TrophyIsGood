@@ -4,6 +4,10 @@ use gpui::{
     div, prelude::*, px, rgb, size, uniform_list,
 };
 use gpui_platform::application;
+use gpui_ce_elements::editable_text::{
+    EditableTextState, StringStorage, text_input,
+    actions::{default_bindings, DEFAULT_INPUT_CONTEXT},
+};
 use ps3trophyisgood::{SortKey, TrophySession, format_timestamp};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -32,10 +36,18 @@ pub struct TrophyApp {
     filter: Filter,
     status: String,
     dirty: bool,
+    time_input: gpui::Entity<EditableTextState>,
+    random_start_input: gpui::Entity<EditableTextState>,
+    random_end_input: gpui::Entity<EditableTextState>,
 }
 
 impl TrophyApp {
-    fn new() -> Self {
+    fn new(cx: &mut Context<Self>) -> Self {
+        let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let time_input = cx.new(|cx| EditableTextState::new(StringStorage::from(now.clone()), cx));
+        let random_start_input = cx.new(|cx| EditableTextState::new(
+            StringStorage::from("2008-01-01T00:00:00Z"), cx));
+        let random_end_input = cx.new(|cx| EditableTextState::new(StringStorage::from(now), cx));
         let mut app = Self {
             session: None,
             icons: HashMap::new(),
@@ -46,6 +58,9 @@ impl TrophyApp {
             filter: Filter::All,
             status: "Drag a PS3 trophy folder here, or click Open Folder.".into(),
             dirty: false,
+            time_input,
+            random_start_input,
+            random_end_input,
         };
         if let Some(folder) = std::env::args_os().nth(1) {
             app.open_folder(std::path::PathBuf::from(folder));
@@ -528,13 +543,14 @@ impl Render for TrophyApp {
 
 pub fn run() {
     application().run(|cx: &mut App| {
+        cx.bind_keys(default_bindings().as_keybindings(Some(DEFAULT_INPUT_CONTEXT)));
         let bounds = Bounds::centered(None, size(px(1320.), px(780.)), cx);
         if let Err(error) = cx.open_window(
             WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |_, cx| cx.new(|_| TrophyApp::new()),
+            |_, cx| cx.new(|cx| TrophyApp::new(cx)),
         ) {
             eprintln!("Could not create GPU window: {error}");
         }
