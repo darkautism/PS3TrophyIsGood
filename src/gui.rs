@@ -503,7 +503,6 @@ fn toolbar_button(label: &'static str, active: bool) -> gpui::Stateful<gpui::Div
         .text_sm()
         .text_color(rgb(if active { 0xe0efff } else { TEXT }))
         .cursor_pointer()
-        .hover_style(|style| style.bg(rgb(HOVER)))
         .child(label)
 }
 
