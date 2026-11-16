@@ -359,6 +359,96 @@ impl TrophySession {
         self.change_state(id, None)
     }
 
+    /// Match the original "Instant Platinum" order: unlock missing base-game
+    /// trophies, unlock Platinum after the latest obtained trophy, then unlock
+    /// missing DLC trophies. Each edit updates the in-memory TROPUSR state;
+    /// the native TROPTRNS record is rebuilt with the *same* timestamp on save.
+    /// Errors restore the entire in-memory edit, rather than leaving half a set.
+    pub fn instant_platinum(&mut self, start_us: i64, end_us: i64) -> Result<usize> {
+        ensure!(start_us <= end_us, "random start is after random end");
+        ensure!(DateTime::<Utc>::from_timestamp_micros(start_us).is_some()
+                && DateTime::<Utc>::from_timestamp_micros(end_us).is_some(),
+                "random time interval is invalid");
+        let last_synced = self.set.trophies.iter()
+            .filter(|t| t.synced)
+            .filter_map(|t| t.earned_us)
+            .max();
+        let lower = start_us.max(last_synced.unwrap_or(start_us));
+        ensure!(lower <= end_us, "random interval ends before last synced trophy");
+        let before_usr = self.raw_usr.clone();
+        let before_trophies = self.set.trophies.clone();
+        let result = (|| {
+            use rand::Rng;
+            let mut rng = rand::thread_rng();
+            let mut changed = 0;
+            let base: Vec<u32> = self.set.trophies.iter()
+                .filter(|t| t.group_id == 0 && t.grade != Grade::Platinum && !t.obtained)
+                .map(|t| t.id).collect();
+            let dlc: Vec<u32> = self.set.trophies.iter()
+                .filter(|t| t.group_id != 0 && !t.obtained)
+                .map(|t| t.id).collect();
+            let platinum: Vec<u32> = self.set.trophies.iter()
+                .filter(|t| t.group_id == 0 && t.grade == Grade::Platinum && !t.obtained)
+                .map(|t| t.id).collect();
+
+            for id in base {
+                let at = rng.gen_range(lower..=end_us);
+                self.unlock_at_utc(id, at)?;
+                changed += 1;
+            }
+            for id in platinum {
+                let last = self.set.trophies.iter().filter_map(|t| t.earned_us)
+                    .max().unwrap_or(lower);
+                let at = last.checked_add(1_000_000)
+                    .context("platinum timestamp overflow")?;
+                self.unlock_at_utc(id, at)?;
+                changed += 1;
+            }
+            for id in dlc {
+                let at = rng.gen_range(lower..=end_us);
+                self.unlock_at_utc(id, at)?;
+                changed += 1;
+            }
+            Ok(changed)
+        })();
+        if result.is_err() {
+            self.raw_usr = before_usr;
+            self.set.trophies = before_trophies;
+        }
+        result
+    }
+
+    /// Emulate the original transaction-log "Clear Trophies" operation:
+    /// remove only unsynchronized unlocks from the end of the timeline,
+    /// stopping at the most recent synchronized entry. Synchronized trophies
+    /// and older entries are not silently discarded.
+    pub fn clear_unsynced_tail(&mut self) -> Result<usize> {
+        let last_synced = self.set.trophies.iter()
+            .filter(|t| t.synced)
+            .filter_map(|t| t.earned_us).max();
+        let mut candidates: Vec<(bool, i64, u32)> = self.set.trophies.iter()
+            .filter(|t| t.obtained && !t.synced)
+            .filter(|t| last_synced.is_none_or(|cutoff| t.earned_us.is_some_and(|t| t >= cutoff)))
+            .map(|t| (t.grade == Grade::Platinum, t.earned_us.unwrap_or(0), t.id))
+            .collect();
+        // Remove platinum first when clearing the full set so its prerequisite
+        // rules cannot prevent removing previously obtained base-game trophies.
+        candidates.sort_by_key(|&(plat, time, id)| (!plat, std::cmp::Reverse(time), id));
+        let before_usr = self.raw_usr.clone();
+        let before_trophies = self.set.trophies.clone();
+        let result = (|| {
+            for &(_, _, id) in &candidates {
+                self.lock(id)?;
+            }
+            Ok(candidates.len())
+        })();
+        if result.is_err() {
+            self.raw_usr = before_usr;
+            self.set.trophies = before_trophies;
+        }
+        result
+    }
+
     /// Save through the original PS3 PFD signing sequence or the RPCS3 DAT
     /// writer, depending on the loaded trophy-set format.
     pub fn save_with_backup(&self) -> Result<PathBuf> {
@@ -567,6 +657,40 @@ mod tests {
         assert_eq!(set.psn_xp(), (180, 195));
         assert_eq!(set.synced_count(), 1);
         assert_eq!(set.obtained_count(), 1);
+    }
+
+    #[test]
+    fn instant_platinum_and_clear_round_trip() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
+        fs::write(dir.path().join("TROPUSR.DAT"), fake_rpcs3_dat()).unwrap();
+        let mut session = TrophySession::open(dir.path()).unwrap();
+        let new_count = session.instant_platinum(1_700_000_100_000_000,
+            1_700_000_110_000_000).unwrap();
+        assert_eq!(new_count, 1);
+        let plat = &session.set.trophies[0];
+        assert!(plat.obtained);
+        assert!(plat.earned_us > session.set.trophies[1].earned_us);
+        session.save_with_backup().unwrap();
+
+        let mut reloaded = TrophySession::open(dir.path()).unwrap();
+        assert!(reloaded.set.trophies[0].obtained);
+        assert_eq!(reloaded.clear_unsynced_tail().unwrap(), 2);
+        reloaded.save_with_backup().unwrap();
+        let cleared = TrophySession::open(dir.path()).unwrap();
+        assert_eq!(cleared.set.obtained_count(), 0);
+    }
+
+    #[test]
+    fn instant_platinum_rejects_invalid_range_without_mutation() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
+        fs::write(dir.path().join("TROPUSR.DAT"), fake_rpcs3_dat()).unwrap();
+        let mut session = TrophySession::open(dir.path()).unwrap();
+        assert!(session.instant_platinum(1_700_000_110_000_000,
+            1_700_000_100_000_000).is_err());
+        assert!(!session.set.trophies[0].obtained);
+        assert!(session.set.trophies[1].obtained);
     }
 
     #[test]
