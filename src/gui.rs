@@ -15,12 +15,13 @@ use ps3trophyisgood::{
 use std::collections::HashMap;
 use std::sync::Arc;
 
-const BG: u32 = 0x0f141c;
-const SURFACE: u32 = 0x19212d;
-const HOVER: u32 = 0x233044;
-const MUTED: u32 = 0x93a2b5;
-const TEXT: u32 = 0xe9eff8;
-const ACCENT: u32 = 0x7eb6ff;
+// Classic, low-chrome desktop palette. Reserve colour for state, not branding.
+const BG: u32 = 0xe7e7e7;
+const SURFACE: u32 = 0xf5f5f5;
+const HOVER: u32 = 0xdbe6f4;
+const MUTED: u32 = 0x666666;
+const TEXT: u32 = 0x1c1c1c;
+const ACCENT: u32 = 0x285d9a;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Filter {
@@ -34,6 +35,14 @@ enum ToolPanel {
     None,
     Batch,
     CopyFrom,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Menu {
+    None,
+    File,
+    Advanced,
+    View,
 }
 
 pub struct TrophyApp {
@@ -55,6 +64,7 @@ pub struct TrophyApp {
     smart_copy_enabled: bool,
     is_copying: bool,
     tool_panel: ToolPanel,
+    menu: Menu,
 }
 
 impl TrophyApp {
@@ -86,6 +96,7 @@ impl TrophyApp {
             smart_copy_enabled: false,
             is_copying: false,
             tool_panel: ToolPanel::None,
+            menu: Menu::None,
         };
         if let Some(folder) = std::env::args_os().nth(1) {
             app.open_folder(std::path::PathBuf::from(folder));
@@ -216,6 +227,11 @@ impl TrophyApp {
 
     fn toggle_tool_panel(&mut self, panel: ToolPanel, cx: &mut Context<Self>) {
         self.tool_panel = if self.tool_panel == panel { ToolPanel::None } else { panel };
+        cx.notify();
+    }
+
+    fn toggle_menu(&mut self, menu: Menu, cx: &mut Context<Self>) {
+        self.menu = if self.menu == menu { Menu::None } else { menu };
         cx.notify();
     }
 
@@ -495,17 +511,29 @@ fn grade_rank(grade: ps3trophyisgood::Grade) -> u8 {
 }
 
 fn toolbar_button(label: &'static str, active: bool) -> gpui::Stateful<gpui::Div> {
-    // Desktop utility buttons: consistent sizing, restrained borders,
-    // no oversized primary call-to-action or saturated highlights.
     div().id(label)
-        .px_3().py_1p5()
-        .rounded_sm()
-        .border_1().border_color(rgb(if active { 0x69727d } else { 0x39414b }))
-        .bg(rgb(if active { 0x353d47 } else { 0x232a33 }))
-        .text_sm()
-        .text_color(rgb(if active { 0xf2f4f6 } else { 0xd4d9df }))
+        .px_2().py_1()
+        .border_1().border_color(rgb(if active { 0x8997a9 } else { 0xbababa }))
+        .bg(rgb(if active { 0xdce5ee } else { 0xf4f4f4 }))
+        .text_sm().text_color(rgb(TEXT))
         .cursor_pointer()
         .child(label)
+}
+
+fn menu_button(label: &'static str, active: bool) -> gpui::Stateful<gpui::Div> {
+    div().id(label)
+        .h_full().px_3()
+        .flex().items_center()
+        .bg(rgb(if active { 0xdbe4ef } else { SURFACE }))
+        .text_sm().text_color(rgb(TEXT))
+        .cursor_pointer().child(label)
+}
+
+fn menu_item(label: &'static str) -> gpui::Stateful<gpui::Div> {
+    div().id(label).w_full().h(px(27.)).px_3()
+        .flex().items_center()
+        .text_sm().text_color(rgb(TEXT))
+        .cursor_pointer().child(label)
 }
 
 impl Render for TrophyApp {
@@ -522,8 +550,6 @@ impl Render for TrophyApp {
         let xp_percent = if total_xp == 0 { 0.0 } else {
             earned_xp as f32 / total_xp as f32
         };
-        let format_label = self.session.as_ref().map(|s| s.set.format.label())
-            .unwrap_or("PlayStation 3");
         let selected = self.selected_id.and_then(|id|
             self.session.as_ref()
                 .and_then(|s| s.set.trophies.iter().find(|t| t.id == id)))
@@ -537,44 +563,34 @@ impl Render for TrophyApp {
         let sort_synced = self.sort == SortKey::Synced;
         let sort_date = self.sort == SortKey::EarnedTime;
         let sort_group = self.sort == SortKey::Group;
-        let header = div()
-            .w_full()
-            .flex()
-            .items_center()
-            .gap_2()
-            .h(px(38.))
-            .px_3()
-            .bg(rgb(SURFACE))
-            .text_sm()
-            .text_color(rgb(MUTED))
-            .child(div().w(px(48.)).child(""))
-
-            .child(div().id("sort-id").w(px(45.)).cursor_pointer().text_color(rgb(if sort_id { ACCENT } else { MUTED }))
-                .child("ID").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Id, cx))))
-            .child(div().id("sort-name").w(px(190.)).cursor_pointer().text_color(rgb(if sort_name { ACCENT } else { MUTED }))
-                .child("Trophy Name")
+        // The original WinForms table keeps icons within the name column:
+        // no separate hero, cards, ribbon, ID column or DLC column.
+        let header = div().w_full().h(px(26.)).px_2()
+            .flex().items_center().gap_1()
+            .bg(rgb(0xf9f9f9))
+            .border_b_1().border_color(rgb(0xc3c3c3))
+            .text_sm().text_color(rgb(TEXT))
+            .child(div().id("sort-name").w(px(210.)).cursor_pointer()
+                .child("獎盃名稱")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Name, cx))))
-
-            .child(div().id("sort-description").w(px(280.)).cursor_pointer().text_color(rgb(if sort_description { ACCENT } else { MUTED }))
-                .child("Description").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Description, cx))))
-            .child(div().id("sort-grade").w(px(78.)).cursor_pointer().text_color(rgb(if sort_grade { ACCENT } else { MUTED }))
-                .child("Type")
+            .child(div().id("sort-description").w(px(320.)).cursor_pointer()
+                .child("獎盃描述")
+                .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Description, cx))))
+            .child(div().id("sort-grade").w(px(66.)).cursor_pointer()
+                .child("獎盃類型")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Grade, cx))))
-
-            .child(div().id("sort-hidden").w(px(58.)).cursor_pointer().text_color(rgb(if sort_hidden { ACCENT } else { MUTED }))
-                .child("Hidden").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Hidden, cx))))
-
-            .child(div().id("sort-obtained").w(px(55.)).cursor_pointer().text_color(rgb(if sort_obtained { ACCENT } else { MUTED }))
-                .child("Get").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Obtained, cx))))
-
-            .child(div().id("sort-synced").w(px(62.)).cursor_pointer().text_color(rgb(if sort_synced { ACCENT } else { MUTED }))
-                .child("IsSync").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Synced, cx))))
-            .child(div().id("sort-date").w(px(190.)).cursor_pointer().text_color(rgb(if sort_date { ACCENT } else { MUTED }))
-                .child("Obtainment Time")
-                .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::EarnedTime, cx))))
-
-            .child(div().id("sort-group").w(px(72.)).cursor_pointer().text_color(rgb(if sort_group { ACCENT } else { MUTED }))
-                .child("From").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Group, cx))));
+            .child(div().id("sort-hidden").w(px(74.)).cursor_pointer()
+                .child("隱藏獎盃")
+                .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Hidden, cx))))
+            .child(div().id("sort-obtained").w(px(50.)).cursor_pointer()
+                .child("取得")
+                .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Obtained, cx))))
+            .child(div().id("sort-synced").w(px(60.)).cursor_pointer()
+                .child("已同步")
+                .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Synced, cx))))
+            .child(div().id("sort-date").w(px(202.)).cursor_pointer()
+                .child("取得時間")
+                .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::EarnedTime, cx))));
 
         div()
             .id("trophy-app-root")
@@ -591,91 +607,38 @@ impl Render for TrophyApp {
                 }
             }))
             .size_full()
+            .relative()
             .flex()
             .flex_col()
             .bg(rgb(BG))
             .text_color(rgb(TEXT))
-            // A compact, neutral desktop command strip. Keep commands left,
-            // the active game identity right, and remove promotional branding.
+            // A single Windows-style menu line with the original inline counters.
             .child(
-                div().w_full().h(px(42.)).px_3().bg(rgb(0x191e25))
-                    .border_b_1().border_color(rgb(0x343b45))
-                    .flex().items_center().justify_between().gap_3()
-                    .child(div().flex().items_center().gap_1()
-                        .child(toolbar_button("Open...", false)
+                div().w_full().h(px(28.)).pl_1().pr_2()
+                    .bg(rgb(SURFACE))
+                    .border_b_1().border_color(rgb(0xbcbcbc))
+                    .flex().items_center().justify_between()
+                    .child(div().h_full().flex().items_center()
+                        .child(menu_button("檔案(F)", self.menu == Menu::File)
+                            .on_click(cx.listener(|this, _, _, cx| this.toggle_menu(Menu::File, cx))))
+                        .child(menu_button("進階(A)", self.menu == Menu::Advanced)
+                            .on_click(cx.listener(|this, _, _, cx| this.toggle_menu(Menu::Advanced, cx))))
+                        .child(menu_button("檢視(V)", self.menu == Menu::View)
+                            .on_click(cx.listener(|this, _, _, cx| this.toggle_menu(Menu::View, cx))))
+                        .child(menu_button("重新整理(R)", false)
                             .on_click(cx.listener(|this, _, _, cx| {
-                                if let Some(path) = rfd::FileDialog::new()
-                                    .set_title("Select PS3 trophy folder")
-                                    .pick_folder()
-                                {
-                                    this.open_folder(path);
-                                    cx.notify();
-                                }
-                            })))
-                        .child(toolbar_button(if self.dirty { "Save *" } else { "Save" }, self.dirty)
-                            .on_click(cx.listener(|this, _, _, cx| this.save(cx))))
-                        .child(div().w(px(1.)).h(px(18.)).mx_2()
-                            .bg(rgb(0x3d4650)))
-                        .child(toolbar_button("Reload", false)
-                            .on_click(cx.listener(|this, _, _, cx| this.refresh_folder(cx))))
-                        .child(toolbar_button("Close", false)
-                            .on_click(cx.listener(|this, _, _, cx| this.close_folder(cx)))))
-                    .child(div().min_w_0().flex().items_center().gap_2()
-                        .when_some(self.game_icon.clone(), |d, image|
-                            d.child(gpui::img(image).w(px(24.)).h(px(24.))))
-                        .when(self.session.is_some(), |d|
-                            d.child(div().min_w_0().flex().items_center().gap_2()
-                                .child(div().min_w_0().overflow_hidden().text_sm()
-                                    .text_color(rgb(0xd2d7de)).child(title))
-                                .child(div().text_xs().text_color(rgb(0x89939f))
-                                    .child(format!("{format_label}  ·  {}",
-                                        self.session.as_ref().map(|s| s.set.npcommid.as_str())
-                                            .unwrap_or_default())))))
-                        .when(self.session.is_none(), |d|
-                            d.child(div().text_xs().text_color(rgb(0x89939f))
-                                .child("No trophy folder open"))))
-            )
-            // Keep the original PSN EXP distinct from merely obtained trophies.
-            .child(
-                div().w_full().px_5().py_2().bg(rgb(0x141b25))
-                    .border_b_1().border_color(rgb(0x2e3a4b))
-                    .flex().items_center().justify_between().gap_4()
-                    .child(div().flex().items_center().gap_5()
-                        .child(div().text_sm().text_color(rgb(TEXT))
-                            .child(format!("Obtained  {obtained} / {total}")))
-                        .child(div().text_sm().text_color(rgb(MUTED))
-                            .child(format!("PSN synced  {synced_count} / {total}"))))
-                    .child(div().flex().items_center().gap_3()
-                        .child(div().text_sm().text_color(rgb(ACCENT))
-                            .child(format!("PSN EXP   {earned_xp} / {total_xp}")))
-                        .child(div().w(px(180.)).h(px(7.)).rounded_full()
-                            .bg(rgb(0x2c394a))
-                            .child(div().h_full().rounded_full().bg(rgb(ACCENT))
-                                .w(px(180. * xp_percent))))
-                        .child(div().text_xs().text_color(rgb(MUTED))
-                            .child(format!("{:.1}%", xp_percent * 100.0))))
-            )
-            .child(
-                div().w_full().px_4().py_2().bg(rgb(BG))
-                    .flex().items_center().justify_between().gap_3()
-                    .child(div().flex().items_center().gap_2()
-                        .child(div().text_sm().font_weight(gpui::FontWeight::SEMIBOLD)
-                            .child("Trophies"))
-                        .child(toolbar_button("All", self.filter == Filter::All)
-                            .on_click(cx.listener(|this, _, _, cx| this.set_filter(Filter::All, cx))))
-                        .child(toolbar_button("Obtained", self.filter == Filter::Obtained)
-                            .on_click(cx.listener(|this, _, _, cx| this.set_filter(Filter::Obtained, cx))))
-                        .child(toolbar_button("Locked", self.filter == Filter::Locked)
-                            .on_click(cx.listener(|this, _, _, cx| this.set_filter(Filter::Locked, cx))))
-                        .child(div().px_2().text_xs().text_color(rgb(MUTED))
-                            .child(format!("{count} shown  ·  Double-click to unlock / lock"))))
-                    .child(div().flex().items_center().gap_2()
-                        .child(toolbar_button("Advanced", self.tool_panel == ToolPanel::Batch)
-                            .on_click(cx.listener(|this, _, _, cx|
-                                this.toggle_tool_panel(ToolPanel::Batch, cx))))
-                        .child(toolbar_button("Copy From", self.tool_panel == ToolPanel::CopyFrom)
-                            .on_click(cx.listener(|this, _, _, cx|
-                                this.toggle_tool_panel(ToolPanel::CopyFrom, cx)))))
+                                this.menu = Menu::None;
+                                this.refresh_folder(cx);
+                            }))))
+                    .child(div().flex().items_center().gap_4()
+                        .child(div().text_sm().child(format!("獎盃個數: {obtained}/{total}")))
+                        .child(div().text_sm().child(format!("PSN Exp: {earned_xp}/{total_xp}")))
+                        .child(div().w(px(126.)).h(px(12.))
+                            .bg(rgb(0xffffff))
+                            .border_1().border_color(rgb(0xb5b5b5))
+                            .child(div().h_full()
+                                .w(px(124. * xp_percent.clamp(0.0, 1.0)))
+                                .bg(rgb(0x36a447)))))
             )
             .child(
                 div()
@@ -683,12 +646,11 @@ impl Render for TrophyApp {
                     .min_h_0()
                     .flex()
                     .flex_col()
-                    .px_4()
                     .child(
                         div().id("trophy-table-scroll").flex_1().min_h_0().overflow_x_scroll()
-                            .border_1().border_color(rgb(0x30394a))
+                            .border_1().border_color(rgb(0xc2c2c2))
                             .child(
-                                div().min_w(px(1200.)).w_full().h_full()
+                                div().min_w(px(1014.)).w_full().h_full()
                                     .flex().flex_col()
                                     .child(header)
                                     .when(count > 0, |table| table.child(
@@ -703,44 +665,48 @@ impl Render for TrophyApp {
                                         let selected = this.selected_id == Some(id);
                                         let icon = this.icons.get(&id).cloned();
                                         let row = div().id(("trophy", id))
-                                            .h(px(50.)).w_full()
-                                            .px_3().flex().items_center().gap_2()
+                                            .h(px(51.)).w_full()
+                                            .px_2().flex().items_center().gap_1()
                                             .bg(rgb(if selected {
-                                                0x29466a
+                                                0xc6dcf1
                                             } else if trophy.synced {
-                                                0x30232c // Preserve the original visually distinct PSN-sync state.
-                                            } else if index % 2 == 0 { BG } else { 0x151d29 }))
-                                            .border_b_1().border_color(rgb(0x242a34))
-                                            .text_sm()
+                                                0xf7b9c2
+                                            } else if index % 2 == 0 {
+                                                0xdddddd
+                                            } else {
+                                                0xe4e4e4
+                                            }))
+                                            .text_sm().text_color(rgb(TEXT))
                                             .cursor_pointer()
-                                            .child(div().w(px(48.)).h(px(42.))
-                                                .when_some(icon, |d, image|
-                                                    d.child(gpui::img(image).w(px(42.)).h(px(42.)))))
-                                            .child(div().w(px(45.)).text_color(rgb(MUTED)).child(format!("#{id:03}")))
-                                            .child(div().w(px(190.)).overflow_hidden().child(trophy.name))
-                                            .child(div().w(px(280.)).overflow_hidden().text_color(rgb(MUTED)).child(trophy.description.clone()))
-                                            .child(div().w(px(78.)).text_color(rgb(match trophy.grade { ps3trophyisgood::Grade::Platinum => 0xf4cce2, ps3trophyisgood::Grade::Gold => 0xf9d98a, ps3trophyisgood::Grade::Silver => 0xd1daec, ps3trophyisgood::Grade::Bronze => 0xddac7e })).child(trophy.grade.label()))
-                                            .child(div().w(px(58.)).child(if trophy.hidden { "Yes" } else { "No" }))
-                                            .child(div().w(px(55.))
-                                                .text_color(rgb(if trophy.obtained { 0x93d9b9 } else { MUTED }))
-                                                .child(if trophy.obtained { "Yes" } else { "No" }))
-                                            .child(div().w(px(62.))
-                                                .text_color(rgb(if trophy.synced { 0xe7afc0 } else { MUTED }))
-                                                .child(if trophy.synced { "Yes" } else { "No" }))
-                                            .child(div().w(px(190.)).text_color(rgb(if trophy.obtained { TEXT } else { MUTED }))
-                                                .child(format_timestamp(trophy.earned_us)))
-                                            .child(div().w(px(72.)).text_color(rgb(MUTED))
-                                                .child(if trophy.group_id == 0 { "BaseGame".into() } else { format!("DLC{}", trophy.group_id) }))
+                                            .child(div().w(px(210.)).flex().items_center().gap_2()
+                                                .child(div().w(px(44.)).h(px(44.))
+                                                    .when_some(icon, |d, image|
+                                                        d.child(gpui::img(image).w(px(44.)).h(px(44.)))))
+                                                .child(div().flex_1().min_w_0().overflow_hidden()
+                                                    .child(trophy.name)))
+                                            .child(div().w(px(320.)).overflow_hidden()
+                                                .child(trophy.description.clone()))
+                                            .child(div().w(px(66.)).child(match trophy.grade {
+                                                ps3trophyisgood::Grade::Platinum => "P",
+                                                ps3trophyisgood::Grade::Gold => "G",
+                                                ps3trophyisgood::Grade::Silver => "S",
+                                                ps3trophyisgood::Grade::Bronze => "B",
+                                            }))
+                                            .child(div().w(px(74.)).child(if trophy.hidden { "是" } else { "否" }))
+                                            .child(div().w(px(50.)).child(if trophy.obtained { "是" } else { "否" }))
+                                            .child(div().w(px(60.)).child(if trophy.synced { "是" } else { "否" }))
+                                            .child(div().w(px(202.)).child(format_timestamp(trophy.earned_us)))
                                             .on_click(cx.listener(move |this, event: &gpui::ClickEvent, _, cx| {
-                                                 this.select_trophy(id, cx);
-                                                 if event.click_count() >= 2 {
-                                                     if obtained {
-                                                         this.lock_selected(cx);
-                                                     } else {
-                                                         this.unlock_selected(cx);
-                                                     }
-                                                 }
-                                             }));
+                                                this.menu = Menu::None;
+                                                this.select_trophy(id, cx);
+                                                if event.click_count() >= 2 {
+                                                    if obtained {
+                                                        this.lock_selected(cx);
+                                                    } else {
+                                                        this.unlock_selected(cx);
+                                                    }
+                                                }
+                                            }));
                                         elements.push(row);
                                     }
                                     elements
@@ -749,8 +715,8 @@ impl Render for TrophyApp {
                                     ))
                                     .when(count == 0, |table| table.child(
                                         div().flex_1().flex().items_center().justify_center()
-                                            .child(div().flex().flex_col().items_center().gap_3()
-                                                .child(div().text_lg().text_color(rgb(TEXT))
+                                            .child(div().flex().flex_col().items_center().gap_2()
+                                                .child(div().text_sm().text_color(rgb(TEXT))
                                                     .child(if self.session.is_some() {
                                                         "No trophies match this filter"
                                                     } else {
@@ -760,42 +726,37 @@ impl Render for TrophyApp {
                                                     .child(if self.session.is_some() {
                                                         "Switch to All to show the complete trophy list."
                                                     } else {
-                                                        "Drag a folder here or use Open Folder above."
+                                                        "請將 PS3 獎盃資料夾拖入視窗，或從「檔案」選單開啟。"
                                                     }))))
                                     )
                             )
                     )
             )
-            .when_some(selected, |root, trophy| {
-                root.child(
-                    div()
-                        .px_5().py_3()
-                        .w_full()
-                        .bg(rgb(HOVER))
-                        .border_t_1().border_color(rgb(0x39475b))
-                        .flex().flex_col().gap_1()
-                        .child(div().text_sm().child(format!("#{}  {}  ·  {}",
-                            trophy.id, trophy.name, trophy.grade.label())))
-                        .child(div().text_sm().text_color(rgb(MUTED)).child(trophy.description))
-                        .child(div().flex().items_center().gap_2().pt_2()
-                            .child(div().text_sm().text_color(rgb(MUTED)).child("Obtainment time"))
-                            .child(text_input("obtainment-time")
-                                .state(self.time_input.downgrade())
-                                .placeholder("2026-11-16T12:00:00Z")
-                                .w(px(260.)).h(px(36.)).px_2()
-                                .rounded_md().border_1().border_color(rgb(0x455268))
-                                .bg(rgb(BG)).text_color(rgb(TEXT)))
-                            .child(toolbar_button("Apply Time", false)
-                                .on_click(cx.listener(|this, _, _, cx| this.apply_selected_time(cx))))
-                            .child(toolbar_button("Unlock Now", false)
-                                .on_click(cx.listener(|this, _, _, cx| this.unlock_selected(cx))))
-                            .child(toolbar_button("Lock Selected", false)
-                                .on_click(cx.listener(|this, _, _, cx| this.lock_selected(cx)))))
-                )
-            })
+            // Editing appears as a small inspector strip only after a row is selected.
+            .when_some(selected, |root, trophy| root.child(
+                div().w_full().h(px(42.)).px_2()
+                    .bg(rgb(SURFACE))
+                    .border_t_1().border_color(rgb(0xbebebe))
+                    .flex().items_center().gap_2()
+                    .child(div().w(px(185.)).overflow_hidden().text_sm()
+                        .child(format!("#{:03}  {}", trophy.id, trophy.name)))
+                    .child(div().text_sm().text_color(rgb(MUTED)).child("取得時間"))
+                    .child(text_input("obtainment-time")
+                        .state(self.time_input.downgrade())
+                        .placeholder("2026-11-16T12:00:00Z")
+                        .w(px(230.)).h(px(26.)).px_2()
+                        .border_1().border_color(rgb(0xb0b0b0))
+                        .bg(rgb(0xffffff)).text_color(rgb(TEXT)))
+                    .child(toolbar_button("套用時間", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.apply_selected_time(cx))))
+                    .child(toolbar_button("取得", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.unlock_selected(cx))))
+                    .child(toolbar_button("取消取得", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.lock_selected(cx))))
+            ))
             .when(self.tool_panel == ToolPanel::Batch, |root| root.child(
-                div().w_full().px_5().py_3().bg(rgb(SURFACE))
-                    .border_t_1().border_color(rgb(0x364659))
+                div().w_full().px_3().py_2().bg(rgb(SURFACE))
+                    .border_t_1().border_color(rgb(0xbcbcbc))
                     .flex().flex_col().gap_2()
                     .child(div().flex().items_center().justify_between()
                         .child(div().text_sm().font_weight(gpui::FontWeight::SEMIBOLD)
@@ -829,8 +790,8 @@ impl Render for TrophyApp {
                             .child("Edits remain in memory until Save.")))
             ))
             .when(self.tool_panel == ToolPanel::CopyFrom, |root| root.child(
-                div().w_full().px_5().py_3().bg(rgb(SURFACE))
-                    .border_t_1().border_color(rgb(0x364659))
+                div().w_full().px_3().py_2().bg(rgb(SURFACE))
+                    .border_t_1().border_color(rgb(0xbcbcbc))
                     .flex().flex_col().gap_2()
                     .child(div().flex().items_center().justify_between()
                         .child(div().text_sm().font_weight(gpui::FontWeight::SEMIBOLD)
@@ -869,24 +830,99 @@ impl Render for TrophyApp {
                         .child(div().text_xs().text_color(rgb(MUTED))
                             .child("Matched by trophy identity, never website row number.")))
             ))
+            // A single-line status bar, like the original utility.
             .child(
-                div()
-                    .w_full().px_5().py_2()
+                div().w_full().h(px(22.)).px_2()
                     .bg(rgb(SURFACE))
-                    .text_sm().text_color(rgb(MUTED))
-                    .child(if self.dirty {
-                        format!("UNSAVED CHANGES  ·  {}", self.status)
-                    } else {
-                        self.status.clone()
-                    })
+                    .border_t_1().border_color(rgb(0xbcbcbc))
+                    .flex().items_center().gap_2()
+                    .child(div().min_w_0().overflow_hidden().text_xs()
+                        .text_color(rgb(MUTED))
+                        .child(if self.dirty {
+                            format!("* 未儲存 · {title} · {}", self.status)
+                        } else {
+                            format!("{title} · {}", self.status)
+                        }))
+                    .child(div().text_xs().text_color(rgb(MUTED))
+                        .child(format!("已同步: {synced_count}/{total}")))
             )
+            // Flyout menus are painted last to overlay the table rather than
+            // reserving another ribbon or pushing the list down.
+            .when(self.menu == Menu::File, |root| root.child(
+                div().absolute().top(px(28.)).left(px(3.)).w(px(215.))
+                    .bg(rgb(0xfafafa)).border_1().border_color(rgb(0xaaaaaa))
+                    .flex().flex_col()
+                    .child(menu_item("開啟獎盃資料夾...").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        if let Some(path) = rfd::FileDialog::new()
+                            .set_title("Select PS3 trophy folder").pick_folder()
+                        {
+                            this.open_folder(path);
+                        }
+                        cx.notify();
+                    })))
+                    .child(menu_item("儲存").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.save(cx);
+                    })))
+                    .child(menu_item("關閉資料夾").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.close_folder(cx);
+                    })))
+            ))
+            .when(self.menu == Menu::Advanced, |root| root.child(
+                div().absolute().top(px(28.)).left(px(64.)).w(px(245.))
+                    .bg(rgb(0xfafafa)).border_1().border_color(rgb(0xaaaaaa))
+                    .flex().flex_col()
+                    .child(menu_item("批次編輯 / 隨機時間...").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.toggle_tool_panel(ToolPanel::Batch, cx);
+                    })))
+                    .child(menu_item("從 PSN 複製時間...").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.toggle_tool_panel(ToolPanel::CopyFrom, cx);
+                    })))
+                    .child(menu_item("立即白金").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.instant_platinum(cx);
+                    })))
+                    .child(menu_item("清除未同步獎盃").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.clear_unsynced(cx);
+                    })))
+                    .child(menu_item("PS3 帳號重新簽署...").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.select_resign_profile(cx);
+                    })))
+            ))
+            .when(self.menu == Menu::View, |root| root.child(
+                div().absolute().top(px(28.)).left(px(125.)).w(px(165.))
+                    .bg(rgb(0xfafafa)).border_1().border_color(rgb(0xaaaaaa))
+                    .flex().flex_col()
+                    .child(menu_item("全部獎盃").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.set_filter(Filter::All, cx);
+                    })))
+                    .child(menu_item("已取得").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.set_filter(Filter::Obtained, cx);
+                    })))
+                    .child(menu_item("未取得").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.set_filter(Filter::Locked, cx);
+                    })))
+                    .child(menu_item("依 ID 排序").on_click(cx.listener(|this, _, _, cx| {
+                        this.menu = Menu::None;
+                        this.set_sort(SortKey::Id, cx);
+                    })))
+            ))
     }
 }
 
 pub fn run() {
     application().run(|cx: &mut App| {
         cx.bind_keys(default_bindings().as_keybindings(Some(DEFAULT_INPUT_CONTEXT)));
-        let bounds = Bounds::centered(None, size(px(1320.), px(780.)), cx);
+        let bounds = Bounds::centered(None, size(px(1040.), px(650.)), cx);
         if let Err(error) = cx.open_window(
             WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
