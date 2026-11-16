@@ -43,7 +43,7 @@ impl TrophyApp {
             sort: SortKey::Id,
             descending: false,
             filter: Filter::All,
-            status: "Open a PS3 or RPCS3 trophy folder to begin.".into(),
+            status: "Drag a PS3 trophy folder here, or click Open Folder.".into(),
         };
         if let Some(folder) = std::env::args_os().nth(1) {
             app.open_folder(std::path::PathBuf::from(folder));
@@ -131,7 +131,7 @@ impl TrophyApp {
             let at = chrono::Utc::now().timestamp_micros();
             match session.unlock_at_utc(id, at) {
                 Ok(()) => {
-                    self.status = format!("Changed trophy #{id} in memory; click Save RPCS3 to persist.");
+                    self.status = format!("Changed trophy #{id} in memory; click Save to persist.");
                     self.rebuild();
                 }
                 Err(e) => self.status = format!("Cannot unlock trophy #{id}: {e:#}"),
@@ -149,7 +149,7 @@ impl TrophyApp {
         if let Some(session) = self.session.as_mut() {
             match session.lock(id) {
                 Ok(()) => {
-                    self.status = format!("Locked trophy #{id} in memory; click Save RPCS3 to persist.");
+                    self.status = format!("Locked trophy #{id} in memory; click Save to persist.");
                     self.rebuild();
                 }
                 Err(e) => self.status = format!("Cannot lock trophy #{id}: {e:#}"),
@@ -167,7 +167,7 @@ impl TrophyApp {
                 self.status = format!("Saved safely. Original DAT backup: {}", backup.display());
             }
             Some((_, Err(e))) => self.status = format!("Save refused: {e:#}"),
-            None => self.status = "Open an RPCS3 trophy folder first.".into(),
+            None => self.status = "Open a trophy folder first.".into(),
         }
         cx.notify();
     }
@@ -203,8 +203,15 @@ impl Render for TrophyApp {
             .unwrap_or_else(|| "PS3TrophyIsGood".to_string());
         let count = self.visible.len();
         let total = self.session.as_ref().map_or(0, |s| s.set.trophies.len());
-        let obtained = self.session.as_ref().map_or(0,
-            |s| s.set.trophies.iter().filter(|t| t.obtained).count());
+        let obtained = self.session.as_ref().map_or(0, |s| s.set.obtained_count());
+        let synced_count = self.session.as_ref().map_or(0, |s| s.set.synced_count());
+        let (earned_xp, total_xp) = self.session.as_ref()
+            .map(|s| s.set.psn_xp()).unwrap_or((0, 0));
+        let xp_percent = if total_xp == 0 { 0.0 } else {
+            earned_xp as f32 / total_xp as f32
+        };
+        let format_label = self.session.as_ref().map(|s| s.set.format.label())
+            .unwrap_or("PlayStation 3");
         let selected = self.selected_id.and_then(|id|
             self.session.as_ref()
                 .and_then(|s| s.set.trophies.iter().find(|t| t.id == id)))
@@ -214,10 +221,10 @@ impl Render for TrophyApp {
             .rounded_md().bg(rgb(ACCENT))
             .text_color(rgb(BG))
             .cursor_pointer()
-            .child("Open Trophy Folder")
+            .child("Open Folder")
             .on_click(cx.listener(|this, _event, _window, cx| {
                 if let Some(path) = rfd::FileDialog::new()
-                    .set_title("Select PS3 / RPCS3 trophy directory")
+                    .set_title("Select PS3 trophy folder")
                     .pick_folder()
                 {
                     this.open_folder(path);
@@ -238,22 +245,37 @@ impl Render for TrophyApp {
             .bg(rgb(SURFACE))
             .text_sm()
             .text_color(rgb(MUTED))
-            .child(div().w(px(40.)).child(""))
-            .child(div().w(px(55.)).child("ID"))
-            .child(div().id("sort-name").w(px(280.)).cursor_pointer().text_color(rgb(if sort_name { ACCENT } else { MUTED }))
+            .child(div().w(px(48.)).child(""))
+            .child(div().w(px(45.)).child("ID"))
+            .child(div().id("sort-name").w(px(190.)).cursor_pointer().text_color(rgb(if sort_name { ACCENT } else { MUTED }))
                 .child("Trophy Name")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Name, cx))))
-            .child(div().id("sort-grade").w(px(105.)).cursor_pointer().text_color(rgb(if sort_grade { ACCENT } else { MUTED }))
+            .child(div().w(px(280.)).child("Description"))
+            .child(div().id("sort-grade").w(px(78.)).cursor_pointer().text_color(rgb(if sort_grade { ACCENT } else { MUTED }))
                 .child("Type")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Grade, cx))))
-            .child(div().w(px(72.)).child("Earned"))
-            .child(div().w(px(72.)).child("Synced"))
-            .child(div().id("sort-date").w(px(205.)).cursor_pointer().text_color(rgb(if sort_date { ACCENT } else { MUTED }))
+            .child(div().w(px(58.)).child("Hidden"))
+            .child(div().w(px(55.)).child("Get"))
+            .child(div().w(px(62.)).child("IsSync"))
+            .child(div().id("sort-date").w(px(190.)).cursor_pointer().text_color(rgb(if sort_date { ACCENT } else { MUTED }))
                 .child("Obtainment Time")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::EarnedTime, cx))))
-            .child(div().w(px(100.)).child("From"));
+            .child(div().w(px(72.)).child("From"));
 
         div()
+            .id("trophy-app-root")
+            .on_drop(cx.listener(|this, paths: &gpui::ExternalPaths, _window, cx| {
+                if let Some(path) = paths.paths().iter().find(|p| {
+                    p.is_dir() || p.file_name().is_some_and(|n|
+                        n.to_string_lossy().eq_ignore_ascii_case("TROPCONF.SFM"))
+                }) {
+                    let folder = if path.is_dir() { path.clone() } else {
+                        path.parent().unwrap_or(path).to_path_buf()
+                    };
+                    this.open_folder(folder);
+                    cx.notify();
+                }
+            }))
             .size_full()
             .flex()
             .flex_col()
@@ -268,11 +290,18 @@ impl Render for TrophyApp {
                     .items_center()
                     .justify_between()
                     .bg(rgb(SURFACE))
-                    .child(div().flex().flex_col()
+                    .child(div().flex().flex_col().gap_1()
                         .child(div().text_xl().child(title))
                         .child(div().text_sm().text_color(rgb(MUTED))
-                            .child(format!("{obtained} / {total} unlocked"))))
-                    .child(open_button)
+                            .child(format!("{format_label}  ·  {obtained}/{total} obtained  ·  {synced_count}/{total} synced"))))
+                    .child(div().flex().items_center().gap_4()
+                        .child(div().flex().flex_col().gap_1()
+                            .child(div().text_sm().text_color(rgb(ACCENT))
+                                .child(format!("PSN EXP   {earned_xp} / {total_xp}")))
+                            .child(div().w(px(260.)).h(px(7.)).rounded_full().bg(rgb(0x303c50))
+                                .child(div().h(px(7.)).rounded_full().bg(rgb(ACCENT))
+                                    .w(px(260. * xp_percent)))))
+                        .child(open_button))
             )
             .child(
                 div()
@@ -291,7 +320,7 @@ impl Render for TrophyApp {
                         .on_click(cx.listener(|this, _, _, cx| this.unlock_selected(cx))))
                     .child(toolbar_button("Lock", false)
                         .on_click(cx.listener(|this, _, _, cx| this.lock_selected(cx))))
-                    .child(toolbar_button("Save RPCS3", false)
+                    .child(toolbar_button("Save", false)
                         .on_click(cx.listener(|this, _, _, cx| this.save(cx))))
             )
             .child(
@@ -317,23 +346,25 @@ impl Render for TrophyApp {
                                         let selected = this.selected_id == Some(id);
                                         let icon = this.icons.get(&id).cloned();
                                         let row = div().id(("trophy", id))
-                                            .h(px(43.)).w_full()
+                                            .h(px(50.)).w_full()
                                             .px_3().flex().items_center().gap_2()
                                             .bg(rgb(if selected { 0x29466a } else if index % 2 == 0 { BG } else { 0x151923 }))
                                             .border_b_1().border_color(rgb(0x242a34))
                                             .text_sm()
                                             .cursor_pointer()
-                                            .child(div().w(px(40.)).h(px(36.))
+                                            .child(div().w(px(48.)).h(px(42.))
                                                 .when_some(icon, |d, image|
-                                                    d.child(gpui::img(image).w(px(32.)).h(px(32.)))))
-                                            .child(div().w(px(55.)).text_color(rgb(MUTED)).child(format!("#{id:03}")))
-                                            .child(div().w(px(280.)).overflow_hidden().child(trophy.name))
-                                            .child(div().w(px(105.)).child(trophy.grade.label()))
-                                            .child(div().w(px(72.)).child(if trophy.obtained { "Yes" } else { "No" }))
-                                            .child(div().w(px(72.)).child(if trophy.synced { "Yes" } else { "No" }))
-                                            .child(div().w(px(205.)).text_color(rgb(if trophy.obtained { TEXT } else { MUTED }))
+                                                    d.child(gpui::img(image).w(px(42.)).h(px(42.)))))
+                                            .child(div().w(px(45.)).text_color(rgb(MUTED)).child(format!("#{id:03}")))
+                                            .child(div().w(px(190.)).overflow_hidden().child(trophy.name))
+                                            .child(div().w(px(280.)).overflow_hidden().text_color(rgb(MUTED)).child(trophy.description.clone()))
+                                            .child(div().w(px(78.)).text_color(rgb(match trophy.grade { ps3trophyisgood::Grade::Platinum => 0xf4cce2, ps3trophyisgood::Grade::Gold => 0xf9d98a, ps3trophyisgood::Grade::Silver => 0xd1daec, ps3trophyisgood::Grade::Bronze => 0xddac7e })).child(trophy.grade.label()))
+                                            .child(div().w(px(58.)).child(if trophy.hidden { "Yes" } else { "No" }))
+                                            .child(div().w(px(55.)).child(if trophy.obtained { "Yes" } else { "No" }))
+                                            .child(div().w(px(62.)).child(if trophy.synced { "Yes" } else { "No" }))
+                                            .child(div().w(px(190.)).text_color(rgb(if trophy.obtained { TEXT } else { MUTED }))
                                                 .child(format_timestamp(trophy.earned_us)))
-                                            .child(div().w(px(100.)).text_color(rgb(MUTED))
+                                            .child(div().w(px(72.)).text_color(rgb(MUTED))
                                                 .child(if trophy.group_id == 0 { "Base".into() } else { format!("DLC {}", trophy.group_id) }))
                                             .on_click(cx.listener(move |this, _, _, cx| {
                                                 this.selected_id = Some(id);
@@ -376,7 +407,7 @@ impl Render for TrophyApp {
 
 pub fn run() {
     application().run(|cx: &mut App| {
-        let bounds = Bounds::centered(None, size(px(1120.), px(740.)), cx);
+        let bounds = Bounds::centered(None, size(px(1320.), px(780.)), cx);
         if let Err(error) = cx.open_window(
             WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
