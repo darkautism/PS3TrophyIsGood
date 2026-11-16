@@ -266,9 +266,9 @@ mod tests {
     use super::*;
 
     fn xml(kind: Format) -> Vec<u8> {
-        let xml = br#"<?xml version="1.0"?><trophyconf><npcommid>NPWR01682_00</npcommid><title-name>Test</title-name>
+        let xml = r#"<?xml version="1.0"?><trophyconf><npcommid>NPWR01682_00</npcommid><title-name>Test</title-name>
             <trophy id="0" ttype="P" hidden="no" gid="0"><name>Le véritable insurgé</name><detail>French</detail></trophy>
-            <trophy id="1" ttype="B" hidden="yes" gid="0"><name>真の覚者</name><detail>Japanese</detail></trophy></trophyconf>"#;
+            <trophy id="1" ttype="B" hidden="yes" gid="0"><name>真の覚者</name><detail>Japanese</detail></trophy></trophyconf>"#.as_bytes();
         let mut bytes = if kind == Format::Ps3 { vec![0u8; 64] } else { vec![] };
         bytes.extend(xml);
         bytes
