@@ -451,7 +451,7 @@ mod tests {
         fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
         let mut dat = fake_rpcs3_dat();
         let state_offset_id1 = 112 + 96 * 2 + 112;
-        dat[state_offset_id1 + 7] = 0;
+        dat[state_offset_id1 + 16 + 7] = 0;
         fs::write(dir.path().join("TROPUSR.DAT"), dat).unwrap();
         let mut session = TrophySession::open(dir.path()).unwrap();
         assert!(session.unlock_at_utc(0, 1_700_000_001_000_000).is_err());
