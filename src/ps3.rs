@@ -51,6 +51,14 @@ fn run_tool(tool: &Path, folder: &Path, command: &str, filename: Option<&str>) -
     if text.contains("[*] error:") || text.contains("error occurred") {
         bail!("pfdtool {command} reported an error: {text}");
     }
+    if command == "-c" {
+        // flatz's pfdtool v0.2.3 ignores backend_cmd_check's return
+        // value and exits 0 even when validation reports FAIL.
+        ensure!(text.contains("statuses:") && text.contains("type: trophy"),
+            "pfdtool returned no recognizable trophy verification report: {text}");
+        ensure!(!text.lines().any(|line| line.trim_end().ends_with("fail")),
+            "pfdtool reported an invalid PS3 PARAM.PFD hash: {text}");
+    }
     Ok(())
 }
 
