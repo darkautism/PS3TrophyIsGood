@@ -88,6 +88,15 @@ fn main() -> Result<()> {
             }
             Ok(())
         }
+        Some("resign-profile") => {
+            let folder = PathBuf::from(args.next().context("expected native PS3 trophy folder")?);
+            let profile = PathBuf::from(args.next().context("expected profile PARAM.SFO")?);
+            let mut session = TrophySession::open(folder)?;
+            session.select_profile_for_resign(profile)?;
+            let backup = session.save_with_backup()?;
+            println!("Re-signed native PS3 trophy data. Originals backed up at {}", backup.display());
+            Ok(())
+        }
         Some("--help") | Some("-h") => {
             println!("PS3TrophyIsGood Rust — native PlayStation 3 trophy editor
 Usage:
@@ -97,7 +106,8 @@ Usage:
   ps3trophyisgood set-time <folder> <id> <UTC RFC3339>
   ps3trophyisgood lock <folder> <id>
   ps3trophyisgood instant-platinum <folder> [<start RFC3339>] [<end RFC3339>]
-  ps3trophyisgood clear <folder>  clear unsynced trophy timeline tail");
+  ps3trophyisgood clear <folder>  clear unsynced trophy timeline tail
+  ps3trophyisgood resign-profile <folder> <profile.sfo>");
             Ok(())
         }
         _ => {
