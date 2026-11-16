@@ -317,10 +317,19 @@ impl TrophySession {
     }
 
     fn change_state(&mut self, id: u32, earned_us: Option<i64>) -> Result<()> {
+        self.change_state_with_copy_policy(id, earned_us, false)
+    }
+
+    /// Only Copy From's explicitly confirmed original-compatible mode may
+    /// discard a synced entry. Ordinary unlock/lock never change sync state.
+    fn change_state_with_copy_policy(
+        &mut self, id: u32, earned_us: Option<i64>, reset_synced: bool,
+    ) -> Result<()> {
         let index = usize::try_from(id)?;
         let trophy = self.set.trophies.get(index).context("unknown trophy ID")?;
         ensure!(trophy.id == id, "trophy ID and state index disagree");
-        ensure!(!trophy.synced, "PSN-synced trophies cannot be edited");
+        ensure!(reset_synced || !trophy.synced,
+            "PSN-synced trophies cannot be edited without explicit Copy From replacement");
 
         if let Some(micros) = earned_us {
             // The first PlayStation trophies were introduced in 2008.
@@ -330,8 +339,10 @@ impl TrophySession {
                 .filter(|t| t.synced)
                 .filter_map(|t| t.earned_us)
                 .max();
-            if let Some(last) = last_synced {
-                ensure!(micros >= last, "date predates the last PSN-synced trophy");
+            if !reset_synced {
+                if let Some(last) = last_synced {
+                    ensure!(micros >= last, "date predates the last PSN-synced trophy");
+                }
             }
             if trophy.grade == Grade::Platinum && !trophy.obtained {
                 ensure!(self.set.trophies.iter()
@@ -363,6 +374,7 @@ impl TrophySession {
         let trophy = &mut self.set.trophies[index];
         trophy.obtained = earned_us.is_some();
         trophy.earned_us = earned_us;
+        if reset_synced { trophy.synced = false; }
         Ok(())
     }
 
@@ -477,16 +489,27 @@ impl TrophySession {
     /// The synchronized entries must never be modified. The edit is atomic
     /// in memory: a failed timestamp or Platinum prerequisite reverts all DATs.
     pub fn apply_copy_from(&mut self, mapping: &[(u32, Option<i64>)]) -> Result<usize> {
+        self.apply_copy_from_with_options(mapping, false)
+    }
+
+    /// Original WinForms Copy From deletes and recreates every matched
+    /// trophy's synchronization record. Only perform that behavior if the
+    /// caller has explicitly confirmed reset_synced=true; otherwise synced
+    /// trophies are left untouched and the caller must report skipped ones.
+    pub fn apply_copy_from_with_options(
+        &mut self, mapping: &[(u32, Option<i64>)], reset_synced: bool,
+    ) -> Result<usize> {
         let mut used_ids = HashSet::new();
         let mut targets = Vec::new();
         for &(id, time) in mapping {
             ensure!(used_ids.insert(id), "Copy From repeated trophy ID {id}");
             let existing = self.set.trophies.iter().find(|t| t.id == id)
                 .with_context(|| format!("Copy From unknown local trophy ID {id}"))?;
-            if existing.synced {
-                continue; // Always keep PSN-synced entries unchanged.
+            if existing.synced && !reset_synced {
+                continue; // Safe mode: preserve PSN-synced entries unchanged.
             }
-            if existing.earned_us != time || existing.obtained != time.is_some() {
+            if (reset_synced && existing.synced)
+                || existing.earned_us != time || existing.obtained != time.is_some() {
                 targets.push((id, time, existing.grade, existing.group_id));
             }
         }
@@ -497,12 +520,12 @@ impl TrophySession {
             // then update base trophies before unlocking Platinum.
             for &(id, time, grade, _) in &targets {
                 if time.is_none() && grade == Grade::Platinum {
-                    self.lock(id)?;
+                    self.change_state_with_copy_policy(id, None, reset_synced)?;
                 }
             }
             for &(id, time, grade, _) in &targets {
                 if time.is_none() && grade != Grade::Platinum {
-                    self.lock(id)?;
+                    self.change_state_with_copy_policy(id, None, reset_synced)?;
                 }
             }
             let mut unlocks: Vec<_> = targets.iter()
@@ -513,7 +536,7 @@ impl TrophySession {
             unlocks.sort_by_key(|&(id, date, grade, gid)|
                 (gid != 0, grade == Grade::Platinum, date, id));
             for (id, at, _, _) in unlocks {
-                self.unlock_at_utc(id, at)?;
+                self.change_state_with_copy_policy(id, Some(at), reset_synced)?;
             }
             Ok(targets.len())
         })();
@@ -889,6 +912,33 @@ mod tests {
             .map(|t| (t.obtained, t.earned_us)).collect::<Vec<_>>(), before_earned);
         assert!(session.apply_copy_from(&[(1, None), (1, None)]).is_err());
         assert_eq!(session.raw_usr, before_usr);
+    }
+
+    #[test]
+    fn copy_from_synced_replacement_is_opt_in_and_survives_reload() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
+        let mut dat = fake_rpcs3_dat();
+        // The trophy #1 state block starts after the two 96-byte type
+        // records and the first 112-byte state record. Its sync flag is at
+        // +16 (header) +8 within the 96-byte state payload.
+        let sync = 112 + 96 * 2 + 112 + 16 + 8;
+        dat[sync..sync + 4].copy_from_slice(&0x100_u32.to_le_bytes());
+        fs::write(dir.path().join("TROPUSR.DAT"), dat).unwrap();
+
+        let mut session = TrophySession::open(dir.path()).unwrap();
+        assert!(session.set.trophies[1].synced);
+        let mapping = [(1, Some(1_600_000_000_000_000))];
+        assert_eq!(session.apply_copy_from(&mapping).unwrap(), 0);
+        assert!(session.set.trophies[1].synced);
+        assert_eq!(session.apply_copy_from_with_options(&mapping, true).unwrap(), 1);
+        assert!(!session.set.trophies[1].synced);
+        assert_eq!(session.set.trophies[1].earned_us, mapping[0].1);
+        session.save_with_backup().unwrap();
+
+        let reopened = TrophySession::open(dir.path()).unwrap();
+        assert!(!reopened.set.trophies[1].synced);
+        assert_eq!(reopened.set.trophies[1].earned_us, mapping[0].1);
     }
 
     #[test]
