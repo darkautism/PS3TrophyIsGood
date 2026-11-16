@@ -53,27 +53,35 @@ impl TrophyApp {
         app
     }
 
-    fn open_folder(&mut self, path: std::path::PathBuf) {
-        if self.dirty {
-            use rfd::{MessageButtons, MessageDialog, MessageDialogResult};
-            match MessageDialog::new()
-                .set_title("Unsaved trophy edits")
-                .set_description("Save changes to the currently opened trophy set before opening another?")
-                .set_buttons(MessageButtons::YesNoCancel)
-                .show()
-            {
-                MessageDialogResult::Yes => {
-                    if let Some(session) = self.session.as_ref() {
-                        if let Err(error) = session.save_with_backup() {
-                            self.status = format!("Unable to save current trophy set: {error:#}");
-                            return;
-                        }
+    fn confirm_unsaved(&mut self) -> bool {
+        if !self.dirty {
+            return true;
+        }
+        use rfd::{MessageButtons, MessageDialog, MessageDialogResult};
+        match MessageDialog::new()
+            .set_title("Unsaved trophy edits")
+            .set_description("Save changes to the currently opened trophy set before closing?")
+            .set_buttons(MessageButtons::YesNoCancel)
+            .show()
+        {
+            MessageDialogResult::Yes => {
+                if let Some(session) = self.session.as_ref() {
+                    if let Err(error) = session.save_with_backup() {
+                        self.status = format!("Unable to save current trophy set: {error:#}");
+                        return false;
                     }
-                    self.dirty = false;
                 }
-                MessageDialogResult::No => {}
-                _ => return,
+                self.dirty = false;
+                true
             }
+            MessageDialogResult::No => true,
+            _ => false,
+        }
+    }
+
+    fn open_folder(&mut self, path: std::path::PathBuf) {
+        if !self.confirm_unsaved() {
+            return;
         }
         match TrophySession::open(&path) {
             Ok(session) => {
@@ -100,6 +108,25 @@ impl TrophyApp {
                 self.status = format!("Could not open {}: {e:#}", path.display());
             }
         }
+    }
+
+    fn refresh_folder(&mut self, cx: &mut Context<Self>) {
+        if let Some(path) = self.session.as_ref().map(|s| s.source.clone()) {
+            self.open_folder(path);
+        }
+        cx.notify();
+    }
+
+    fn close_folder(&mut self, cx: &mut Context<Self>) {
+        if self.confirm_unsaved() {
+            self.session = None;
+            self.icons.clear();
+            self.visible.clear();
+            self.selected_id = None;
+            self.dirty = false;
+            self.status = "No trophy folder is open. Drag one into this window or click Open Folder.".into();
+        }
+        cx.notify();
     }
 
     fn rebuild(&mut self) {
@@ -385,6 +412,10 @@ impl Render for TrophyApp {
                         .on_click(cx.listener(|this, _, _, cx| this.clear_unsynced(cx))))
                     .child(toolbar_button("Save", false)
                         .on_click(cx.listener(|this, _, _, cx| this.save(cx))))
+                    .child(toolbar_button("Refresh", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.refresh_folder(cx))))
+                    .child(toolbar_button("Close", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.close_folder(cx))))
             )
             .child(
                 div()
