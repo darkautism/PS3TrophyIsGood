@@ -4,7 +4,10 @@
 mod gui;
 
 use anyhow::{Context, Result};
-use ps3trophyisgood::{TrophySession, format_timestamp};
+use ps3trophyisgood::{
+    TrophySession, format_timestamp, CopySource, SmartCopyOptions,
+    load_copy_page, parse_copy_page, map_remote_to_local, smart_copy,
+};
 use std::path::PathBuf;
 
 fn inspect(path: PathBuf) -> Result<()> {
@@ -88,6 +91,40 @@ fn main() -> Result<()> {
             }
             Ok(())
         }
+        Some("copy-from") => {
+            let folder = PathBuf::from(args.next().context("expected trophy folder")?);
+            let source_name = args.next().context("expected psnprofiles or psntl")?;
+            let source = CopySource::parse(&source_name.to_string_lossy())?;
+            let target = args.next().context("expected trophy page URL or saved HTML file")?;
+            let html = load_copy_page(source, &target.to_string_lossy())?;
+            let remote = parse_copy_page(source, &html)?;
+            let mut session = TrophySession::open(folder)?;
+            let mut mapping = map_remote_to_local(&session.set.trophies, &remote)?;
+            if let Some(flag) = args.next() {
+                anyhow::ensure!(flag == "--smart", "expected --smart or no remaining arguments");
+                let number = |args: &mut std::iter::Skip<std::env::ArgsOs>| -> Result<i64> {
+                    Ok(args.next().context("missing Smart Copy offset value")?
+                        .to_string_lossy().parse().context("invalid Smart Copy offset")?)
+                };
+                let years = u32::try_from(number(&mut args)?)?;
+                let months = u32::try_from(number(&mut args)?)?;
+                let days = u32::try_from(number(&mut args)?)?;
+                let min_jitter_seconds = number(&mut args)?;
+                let max_jitter_seconds = number(&mut args)?;
+                smart_copy(&mut mapping, SmartCopyOptions {
+                    years, months, days, min_jitter_seconds, max_jitter_seconds,
+                })?;
+            }
+            let changed = session.apply_copy_from(&mapping)?;
+            if changed == 0 {
+                println!("Copy From matched {} trophies; no unsynchronized states needed modification.", mapping.len());
+            } else {
+                let backup = session.save_with_backup()?;
+                println!("Copy From matched {} trophies and updated {changed}. Originals backed up at {}",
+                    mapping.len(), backup.display());
+            }
+            Ok(())
+        }
         Some("resign-profile") => {
             let folder = PathBuf::from(args.next().context("expected native PS3 trophy folder")?);
             let profile = PathBuf::from(args.next().context("expected profile PARAM.SFO")?);
@@ -107,7 +144,8 @@ Usage:
   ps3trophyisgood lock <folder> <id>
   ps3trophyisgood instant-platinum <folder> [<start RFC3339>] [<end RFC3339>]
   ps3trophyisgood clear <folder>  clear unsynced trophy timeline tail
-  ps3trophyisgood resign-profile <folder> <profile.sfo>");
+  ps3trophyisgood resign-profile <folder> <profile.sfo>
+  ps3trophyisgood copy-from <folder> <psnprofiles|psntl> <URL|saved.html> [--smart <years> <months> <days> <minSeconds> <maxSeconds>]");
             Ok(())
         }
         _ => {
