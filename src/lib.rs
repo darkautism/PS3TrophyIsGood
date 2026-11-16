@@ -4,6 +4,8 @@
 //! Sort order, filters, display language, and UI row index never identify trophies.
 
 mod trophy;
+mod ps3;
+mod trans;
 pub use trophy::{
     Format, Grade, SortKey, Trophy, TrophySession, TrophySet,
     format_timestamp, parse_tropconf,
