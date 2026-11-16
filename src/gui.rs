@@ -15,12 +15,12 @@ use ps3trophyisgood::{
 use std::collections::HashMap;
 use std::sync::Arc;
 
-const BG: u32 = 0x0f1117;
-const SURFACE: u32 = 0x1a1e29;
-const HOVER: u32 = 0x252d3c;
-const MUTED: u32 = 0x9da7ba;
-const TEXT: u32 = 0xecf0fa;
-const ACCENT: u32 = 0x63a7ff;
+const BG: u32 = 0x0f141c;
+const SURFACE: u32 = 0x19212d;
+const HOVER: u32 = 0x233044;
+const MUTED: u32 = 0x93a2b5;
+const TEXT: u32 = 0xe9eff8;
+const ACCENT: u32 = 0x7eb6ff;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Filter {
@@ -29,9 +29,17 @@ enum Filter {
     Locked,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ToolPanel {
+    None,
+    Batch,
+    CopyFrom,
+}
+
 pub struct TrophyApp {
     session: Option<TrophySession>,
     icons: HashMap<u32, Arc<gpui::Image>>,
+    game_icon: Option<Arc<gpui::Image>>,
     visible: Vec<usize>,
     selected_id: Option<u32>,
     sort: SortKey,
@@ -46,6 +54,7 @@ pub struct TrophyApp {
     smart_options_input: gpui::Entity<EditableTextState>,
     smart_copy_enabled: bool,
     is_copying: bool,
+    tool_panel: ToolPanel,
 }
 
 impl TrophyApp {
@@ -61,6 +70,7 @@ impl TrophyApp {
         let mut app = Self {
             session: None,
             icons: HashMap::new(),
+            game_icon: None,
             visible: Vec::new(),
             selected_id: None,
             sort: SortKey::Id,
@@ -75,6 +85,7 @@ impl TrophyApp {
             smart_options_input,
             smart_copy_enabled: false,
             is_copying: false,
+            tool_panel: ToolPanel::None,
         };
         if let Some(folder) = std::env::args_os().nth(1) {
             app.open_folder(std::path::PathBuf::from(folder));
@@ -119,6 +130,8 @@ impl TrophyApp {
                 self.selected_id = None;
                 self.dirty = false;
                 self.icons.clear();
+                self.game_icon = std::fs::read(path.join("ICON0.PNG")).ok().map(|bytes|
+                    Arc::new(gpui::Image::from_bytes(gpui::ImageFormat::Png, bytes)));
                 // Cache each PNG once, keyed by the real trophy ID rather than
                 // the row position (which changes when sorting or filtering).
                 for trophy in &session.set.trophies {
@@ -150,6 +163,7 @@ impl TrophyApp {
         if self.confirm_unsaved() {
             self.session = None;
             self.icons.clear();
+            self.game_icon = None;
             self.visible.clear();
             self.selected_id = None;
             self.dirty = false;
@@ -197,6 +211,11 @@ impl TrophyApp {
             self.descending = false;
         }
         self.rebuild();
+        cx.notify();
+    }
+
+    fn toggle_tool_panel(&mut self, panel: ToolPanel, cx: &mut Context<Self>) {
+        self.tool_panel = if self.tool_panel == panel { ToolPanel::None } else { panel };
         cx.notify();
     }
 
