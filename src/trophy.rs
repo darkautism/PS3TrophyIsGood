@@ -293,6 +293,16 @@ impl TrophySession {
             raw_usr, state_offsets, native_ps3, transactions })
     }
 
+    /// Re-sign a native PlayStation 3 trophy set for a profile SFO.
+    /// Mirrors the original WinForms profile selector: copy the 16-byte
+    /// account identifier from the supplied SFO into the temporary PARAM.SFO.
+    /// The actual PFD update and encrypted save occur in save_with_backup().
+    pub fn select_profile_for_resign(&mut self, profile: impl AsRef<Path>) -> Result<()> {
+        self.native_ps3.as_mut()
+            .context("account profile re-signing requires a native PlayStation 3 trophy set")?
+            .select_profile(profile.as_ref())
+    }
+
     pub fn state_record_count(&self) -> usize {
         self.state_offsets.len()
     }
