@@ -9,7 +9,7 @@ mod trans;
 mod copy_from;
 pub use copy_from::{
     CopySource, RemoteTrophy, SmartCopyOptions, parse_copy_page,
-    map_remote_to_local, smart_copy,
+    map_remote_to_local, smart_copy, load_copy_page,
 };
 pub use trophy::{
     Format, Grade, SortKey, Trophy, TrophySession, TrophySet,
