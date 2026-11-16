@@ -9,8 +9,8 @@ use gpui_ce_elements::editable_text::{
     actions::{default_bindings, DEFAULT_INPUT_CONTEXT},
 };
 use ps3trophyisgood::{
-    SortKey, TrophySession, format_timestamp, CopySource, SmartCopyOptions,
-    load_copy_page, parse_copy_page, map_remote_to_local, smart_copy,
+    SortKey, TrophySession, format_timestamp, SmartCopyOptions,
+    load_copy_page_auto, parse_copy_page, map_remote_to_local, smart_copy,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -364,7 +364,7 @@ impl TrophyApp {
         cx.notify();
     }
 
-    fn import_copy_from(&mut self, source: CopySource, cx: &mut Context<Self>) {
+    fn import_copy_from(&mut self, cx: &mut Context<Self>) {
         let Some(session) = self.session.as_ref() else {
             self.status = "Open a PS3 trophy folder before importing Copy From.".into();
             cx.notify();
@@ -410,26 +410,36 @@ impl TrophyApp {
         let folder = session.source.clone();
         let local = session.set.trophies.clone();
         self.is_copying = true;
-        self.status = format!("Fetching {} trophy identities...", source.label());
+        let initial_state: Vec<_> = local.iter()
+            .map(|t| (t.id, t.obtained, t.synced, t.earned_us)).collect();
+        self.status = "Loading Copy From trophy page...".into();
         cx.notify();
 
         // HTTP and DOM parsing run off the UI thread; only the validated
         // mapping comes back to the GPUI view. Nothing is saved automatically.
         cx.spawn(async move |this, cx| {
             let result = cx.background_spawn(async move {
-                let html = load_copy_page(source, &url)?;
+                let (source, html) = load_copy_page_auto(&url)?;
                 let remote = parse_copy_page(source, &html)?;
                 let count = remote.len();
                 let mut mapping = map_remote_to_local(&local, &remote)?;
                 if let Some(opts) = options {
                     smart_copy(&mut mapping, opts)?;
                 }
-                Ok::<_, anyhow::Error>((count, mapping))
+                let skipped_synced = mapping.iter().filter(|(id, timestamp)|
+                    local.iter().find(|t| t.id == *id)
+                        .is_some_and(|t| t.synced && t.earned_us != *timestamp)
+                ).count();
+                Ok::<_, anyhow::Error>((source, count, mapping, skipped_synced))
             }).await;
             this.update(cx, |view, cx| {
                 view.is_copying = false;
-                if view.session.as_ref().is_none_or(|s| s.source != folder) {
-                    view.status = "Copy From abandoned: a different trophy folder was opened.".into();
+                let unchanged = view.session.as_ref().is_some_and(|s|
+                    s.source == folder && s.set.trophies.iter()
+                        .map(|t| (t.id, t.obtained, t.synced, t.earned_us))
+                        .eq(initial_state.iter().copied()));
+                if !unchanged {
+                    view.status = "Copy From cancelled: trophy data changed while the page was loading.".into();
                     cx.notify();
                     return;
                 }
@@ -437,15 +447,15 @@ impl TrophyApp {
                     Err(error) => {
                         view.status = format!("Copy From failed without modifying trophies: {error:#}");
                     }
-                    Ok((remote_count, mapping)) => {
+                    Ok((source, remote_count, mapping, skipped_synced)) => {
                         let matched = mapping.len();
                         if let Some(session) = view.session.as_mut() {
                             match session.apply_copy_from(&mapping) {
                                 Ok(changed) => {
                                     view.dirty |= changed > 0;
                                     view.status = format!(
-                                        "{} source rows; {} identities matched; {} timestamps edited in memory. Click Save.",
-                                        remote_count, matched, changed);
+                                        "{}: {} rows, {} matched, {} edited, {} synced entries preserved. Save to commit.",
+                                        source.label(), remote_count, matched, changed, skipped_synced);
                                     view.rebuild();
                                 }
                                 Err(error) => view.status = format!(
@@ -795,24 +805,21 @@ impl Render for TrophyApp {
                     .flex().flex_col().gap_2()
                     .child(div().flex().items_center().justify_between()
                         .child(div().text_sm().font_weight(gpui::FontWeight::SEMIBOLD)
-                            .child("Copy trophy times from PSN"))
+                            .child("從 PSN 複製時間"))
                         .child(toolbar_button("Hide copy tools", false)
                             .on_click(cx.listener(|this, _, _, cx|
                                 this.toggle_tool_panel(ToolPanel::CopyFrom, cx)))))
                     .child(div().flex().items_center().gap_2().text_sm()
-                        .child(div().text_color(rgb(MUTED)).child("Page"))
+                        .child(div().text_color(rgb(MUTED)).child("網址 / HTML"))
                         .child(text_input("copy-url")
                             .state(self.copy_url_input.downgrade())
-                            .placeholder("HTTPS PSN trophy URL or saved .html file")
+                            .placeholder("PSNProfiles / PSN Trophy Leaders URL 或已儲存 HTML")
                             .w(px(480.)).h(px(34.)).px_2().rounded_md()
                             .border_1().border_color(rgb(0x455268))
                             .bg(rgb(BG)).text_color(rgb(TEXT)))
-                        .child(toolbar_button("PSNProfiles", false)
+                        .child(toolbar_button("匯入 Copy From", false)
                             .on_click(cx.listener(|this, _, _, cx|
-                                this.import_copy_from(CopySource::PsnProfiles, cx))))
-                        .child(toolbar_button("PSN Trophy Leaders", false)
-                            .on_click(cx.listener(|this, _, _, cx|
-                                this.import_copy_from(CopySource::PsnTrophyLeaders, cx))))
+                                this.import_copy_from(cx))))
                     )
                     .child(div().flex().items_center().gap_2()
                         .child(toolbar_button(if self.smart_copy_enabled {
@@ -828,7 +835,7 @@ impl Render for TrophyApp {
                             .border_1().border_color(rgb(0x455268))
                             .bg(rgb(BG)).text_color(rgb(TEXT)))
                         .child(div().text_xs().text_color(rgb(MUTED))
-                            .child("Matched by trophy identity, never website row number.")))
+                            .child("依獎盃名稱與類型對應；已同步獎盃不覆寫。")))
             ))
             // A single-line status bar, like the original utility.
             .child(
