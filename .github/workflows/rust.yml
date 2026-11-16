@@ -46,6 +46,21 @@ jobs:
         run: cargo check --features gui --bin ps3trophyisgood
       - name: Build runnable test binary
         run: cargo build --features gui --bin ps3trophyisgood
+      # The original Windows pfdtool helper is required for native PS3
+      # decryption and re-signing. Package its config files alongside the GUI.
+      - name: Fetch original PS3 pfdtool runtime (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: legacy-pfdtool
+          sparse-checkout: PS3TrophyIsGood/pfdtool
+      - name: Bundle native PS3 pfdtool (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path target/debug/pfdtool | Out-Null
+          Copy-Item legacy-pfdtool/PS3TrophyIsGood/pfdtool/* target/debug/pfdtool/
       - name: Upload desktop test binary
         uses: actions/upload-artifact@v4
         with:
@@ -53,4 +68,5 @@ jobs:
           path: |
             target/debug/ps3trophyisgood
             target/debug/ps3trophyisgood.exe
+            target/debug/pfdtool/*
           if-no-files-found: error
