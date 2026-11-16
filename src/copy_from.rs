@@ -415,6 +415,16 @@ pub struct SmartCopyOptions {
 pub fn smart_copy(
     mapping: &mut [(u32, Option<i64>)], opts: SmartCopyOptions,
 ) -> Result<()> {
+    // A rejected offset must not leave an earlier trophy half-updated.
+    let mut staged = mapping.to_vec();
+    smart_copy_staged(&mut staged, opts)?;
+    mapping.copy_from_slice(&staged);
+    Ok(())
+}
+
+fn smart_copy_staged(
+    mapping: &mut [(u32, Option<i64>)], opts: SmartCopyOptions,
+) -> Result<()> {
     ensure!(opts.min_jitter_seconds <= opts.max_jitter_seconds,
         "Smart Copy minimum exceeds maximum");
     let days = i64::from(opts.years).checked_mul(365)
@@ -543,6 +553,20 @@ mod tests {
             max_jitter_seconds: i64::MAX,
         }).unwrap_err();
         assert!(err.to_string().contains("overflow"));
+    }
+
+    #[test]
+    fn smart_copy_overflow_never_partially_mutates_mapping() {
+        let mut mapping = [
+            (0, Some(1_700_000_000_000_000)),
+            (1, Some(i64::MAX - 100_000)),
+        ];
+        let original = mapping;
+        assert!(smart_copy(&mut mapping, SmartCopyOptions {
+            years: 0, months: 0, days: 1,
+            min_jitter_seconds: 0, max_jitter_seconds: 0,
+        }).is_err());
+        assert_eq!(mapping, original);
     }
 
     #[test]
