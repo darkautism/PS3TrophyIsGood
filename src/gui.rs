@@ -160,11 +160,11 @@ impl TrophyApp {
 
     fn save(&mut self, cx: &mut Context<Self>) {
         let result = self.session.as_ref()
-            .map(|session| (session.source.clone(), session.save_rpcs3_with_backup()));
+            .map(|session| (session.source.clone(), session.save_with_backup()));
         match result {
             Some((path, Ok(backup))) => {
                 self.open_folder(path);
-                self.status = format!("Saved safely. Original DAT backup: {}", backup.display());
+                self.status = format!("Saved trophy data. Originals backed up at {}", backup.display());
             }
             Some((_, Err(e))) => self.status = format!("Save refused: {e:#}"),
             None => self.status = "Open a trophy folder first.".into(),
