@@ -345,7 +345,12 @@ pub fn smart_copy(
     let base_delta = days.checked_mul(86_400_000_000).context("Smart Copy time overflow")?;
     let mut rng = rand::thread_rng();
     let jitter = |rng: &mut rand::rngs::ThreadRng| {
-        rng.gen_range(opts.min_jitter_seconds..=opts.max_jitter_seconds)
+        if opts.min_jitter_seconds == opts.max_jitter_seconds {
+            opts.min_jitter_seconds
+        } else {
+            // .NET Random.Next(min, max) excludes the upper bound.
+            rng.gen_range(opts.min_jitter_seconds..opts.max_jitter_seconds)
+        }
     };
     let mut delta = base_delta.checked_add(jitter(&mut rng) * 1_000_000)
         .context("Smart Copy delta overflow")?;

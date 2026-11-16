@@ -24,28 +24,28 @@ Status terminology:
 | `PARAM.PFD`, `PARAM.SFO`, decrypt, encrypt, re-sign | `Utility.encryptTrophy` / pfdtool | Code present | Real PFD check + re-encrypt/decrypt/PS3 console validation |
 | Fail save if PFD verification reports invalid hashes | pfdtool `-c` | Code present | Requires native save; checks `FAIL` output despite exit status 0 |
 | Back up original bytes before write | `Utility.CopyTrophyData` | Code present | Real-file write/reopen verification |
-| Modify an individual unsynced trophy's obtainment time | `ChangeTrophyTime` | Core code present; GUI missing | GUI date/time editor and actual PS3 save |
-| Unlock/lock individual trophy | `UnlockTrophy`, `DeleteTrophy` | Synthetic-tested; GUI partial | Confirmation and double-click behavior |
+| Modify an individual unsynced trophy's obtainment time | `ChangeTrophyTime` | Core and native GPUI editable ISO time field | Real PS3 save, date-picker UX refinements |
+| Unlock/lock individual trophy | `UnlockTrophy`, `DeleteTrophy` | Synthetic-tested, GUI selected edit & double-click actions | Confirm actual desktop behavior and native PS3 writeback |
 | Preserve PSN sync flags and last synced time boundary | `TROPUSR`, `TROPTRNS`, `MainAPP.ValidateSelectedDate` | Code present | Cross-check against genuine synchronized trophy data |
 | Display all 8 original columns and PNG icons | `MainAPP.RefreshComponents` | Code present | Actual desktop visual review, resizing, tooltips |
 | Independent trophy IDs vs row ordering | `TROPCONF`, UI | Code present | Tests for sorted and filtered editing |
-| Sort, filter, virtual scrolling | `ListViewEx`; user-requested enhancement | Partial | Every column sorting, resizable widths, horizontal scrolling |
+| Sort, filter, virtual scrolling | `ListViewEx`; user-requested enhancement | All-column sorting/filter/virtualization code present | Resizable widths, horizontal scrolling and runtime test |
 | PSN synchronized count, EXP weights, completion | `MainAPP.CompletionRates` | Synthetic-tested | Visual review with native synchronized files |
 | Drag/drop directories and SFM file | `MainAPP.Form1_DragDrop` | Code present | Windows Explorer, Finder, Linux file manager tests |
 | Open with standard folder picker | `MainAPP.OpenFile` | Code present | Desktop runtime tests |
-| Save, refresh, close, unsaved-edit confirmation | `MainAPP.SaveFile`, `CloseFile` | Partial | Explicit close/refresh actions and window-close confirmation |
-| Instant Platinum base-game → Platinum → DLC | `MainAPP.瞬間白金...` | Synthetic-tested; GUI action present | Random range selector and real native round-trip |
+| Save, refresh, close, unsaved-edit confirmation | `MainAPP.SaveFile`, `CloseFile` | GUI actions and window-close confirmation code present | Runtime check of native dialogs and window close handling |
+| Instant Platinum base-game → Platinum → DLC | `MainAPP.瞬間白金...` | Synthetic-tested, GPUI random date controls present | Real native PS3 round trip and time semantics |
 | Clear unsynchronized trophy log tail | `MainAPP.清除獎杯...`, `TROPTRNS.PopTrophy` | Synthetic-tested | Compare behavior on irregular/same-time event sequences |
-| Random start/end settings, batch random dates | `MainAPP.setRandomStartTime...`, `setRandomEndTime...` | Partial CLI only | GUI controls for start/end and batch editing |
-| Copy From PSN Trophy Leaders | `CopyFrom.cs`, `CopyFrom.IdentityMapping.cs` | Missing | Fetch, parse, safely map, import |
-| Copy From PSNProfiles | `CopyFrom.PSNProfiles.cs`, `CopyFrom.IdentityMapping.cs` | Missing | Date parse, source identity validation |
-| Smart Copy / time offset | `CopyFrom.smartCopy`, `smartCopyPairs` | Missing | Preset/random offset controls and tests |
-| XMB trophy ID mapping, name/description fallback, issue #65 | `CopyFrom.IdentityMapping.cs` | Missing | Preserve original anti-mismatch checks |
-| Cloudflare/FlareSolverr verification | `FlareSolverrManager.cs`, CopyFrom UIs | Missing | Cross-platform non-WebView equivalent |
-| Profile resign using external SFO | `Utility.encryptTrophy`, profile combo | Missing | Correct account ID handling and PFD validation |
+| Random start/end settings, batch random dates | `MainAPP.setRandomStartTime...`, `setRandomEndTime...` | GUI interval controls and instant platinum | General batch time editor and validation on hardware |
+| Copy From PSN Trophy Leaders | `CopyFrom.cs`, `CopyFrom.IdentityMapping.cs` | Parser, HTTPS, GUI, CLI, strict identity mapping code present | Live website content and imported PS3 file tests |
+| Copy From PSNProfiles | `CopyFrom.PSNProfiles.cs`, `CopyFrom.IdentityMapping.cs` | Parser, date handling, HTTPS, GUI, CLI code present | Live website content and imported PS3 file tests |
+| Smart Copy / time offset | `CopyFrom.smartCopy`, `smartCopyPairs` | Core algorithm, GUI options and CLI present; synthetic-tested | Offset edge cases, live import and original UI parity |
+| XMB trophy ID mapping, name/description fallback, issue #65 | `CopyFrom.IdentityMapping.cs` | ID corroboration plus strict type/name/description mapping present | Different trophy-set versions, translated site names / live samples |
+| Cloudflare/FlareSolverr verification | `FlareSolverrManager.cs`, CopyFrom UIs | Optional FlareSolverr HTTP API, no embedded browser | Challenge response/session workflow and live testing |
+| Profile resign using external SFO | `Utility.encryptTrophy`, profile combo | Native profile file picker, CLI and SFO account-ID copy synthetic tests | Real PS3 account signing and PFD verification |
 | English, zh-Hant, pt-BR language settings | `MainAPP.cs`, `*.resx` | Missing | Persist settings and complete GUI localization |
 | Original application icon, Windows without console | `orignal.ico` / Windows resource | Code present | Inspect actual Windows executable + taskbar/title icon |
-| Standalone native helper on three platforms | original bundled Windows pfdtool | CI packaged | Exercise all three actual binaries with native PS3 samples |
+| Standalone native helper on three platforms | original bundled Windows pfdtool | CI packaged; macOS/Linux now reuse original master PFD keys | Exercise helpers with genuine native PS3 saves |
 | Low idle cost, event-driven GPU UI | GPUI target | Code present | Idle CPU/RAM/GPU profiling, DPI/scaling |
 | Complete 1:1 parity | All original sources | **Not achieved** | Close all missing / partial rows and perform hardware acceptance |
 
@@ -64,8 +64,10 @@ The new native PFD save pipeline:
    because the original CLI can return exit status 0 for failed checks.
 5. Decrypts the just-encrypted output in **a second separate directory**
    and compares the plaintext to the expected bytes.
-6. Backs up the originals, stages writes in the same filesystem and
-   replaces the three modified files.
+6. Re-parses the verified DAT outputs with Rust's native PS3 parsers and
+   compares the obtained/synced state, trophy ID, and timestamp of every entry.
+7. Backs up the originals, stages writes in the same filesystem and
+   replaces the modified DAT/PFD files, plus SFO when a profile was chosen.
 
 These validations add evidence but **are not a substitute** for a genuine
 retail PS3 round-trip, PFD ownership/account checks, and PS3 loading/syncing.
@@ -74,11 +76,14 @@ retail PS3 round-trip, PFD ownership/account checks, and PS3 loading/syncing.
 
 1. Native PS3 real-file fixtures: open, edit, save, re-open, compare with original
    WinForms output and load on the hardware.
-2. GPUI date/time editor, refresh/close/confirmation, full table interactions.
-3. Profile/SFO support, general random time settings and other original menus.
-4. Copy From / Smart Copy with robust identity matching and FlareSolverr.
-5. Localization, visual UI and drag/drop runtime verification, idle performance.
-6. Reproducible multi-platform artifact packaging and user acceptance.
+2. Real GPUI runtime checks: timestamp edit, double-click, full-width table
+   scaling/resize, drag/drop, original window icon, refresh, and save/exit prompts.
+3. Copy From / Smart Copy tested against real PSNProfiles and PSN Trophy Leaders
+   HTML + account session/Cloudflare handling, and cross-version DLC sets.
+4. Finish unported original behaviors: UI language translations and settings,
+   general batch random time editing, native date picker and exact original UI flow.
+5. Visual polish, resizable widths, idle profiling and proper platform packaging.
+6. Reproducible physical PS3 verification and end-user acceptance evidence.
 
 The product is the original **PlayStation 3** trophy editor. RPCS3 is only
 an additional auto-detected input format.

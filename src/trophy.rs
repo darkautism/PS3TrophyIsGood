@@ -503,7 +503,7 @@ impl TrophySession {
             // Actual earned times are not local Trophy IDs: sort to keep the
             // original chronology, always enforcing the Platinum prerequisite.
             unlocks.sort_by_key(|&(id, date, grade, gid)|
-                (grade == Grade::Platinum, gid != 0, date, id));
+                (gid != 0, grade == Grade::Platinum, date, id));
             for (id, at, _, _) in unlocks {
                 self.unlock_at_utc(id, at)?;
             }
@@ -759,6 +759,49 @@ mod tests {
             1_700_000_100_000_000).is_err());
         assert!(!session.set.trophies[0].obtained);
         assert!(session.set.trophies[1].obtained);
+    }
+
+    #[test]
+    fn copy_from_atomic_edit_preserves_ids_across_save_and_reload() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
+        fs::write(dir.path().join("TROPUSR.DAT"), fake_rpcs3_dat()).unwrap();
+        let mut session = TrophySession::open(dir.path()).unwrap();
+        let mapping = [
+            (0, Some(1_700_000_101_000_000)),
+            (1, Some(1_700_000_100_000_000)),
+        ];
+        assert_eq!(session.apply_copy_from(&mapping).unwrap(), 2);
+        session.save_with_backup().unwrap();
+
+        let mut reopened = TrophySession::open(dir.path()).unwrap();
+        assert_eq!(reopened.set.trophies[0].earned_us, mapping[0].1);
+        assert_eq!(reopened.set.trophies[1].earned_us, mapping[1].1);
+
+        assert_eq!(reopened.apply_copy_from(&[(0, None), (1, None)]).unwrap(), 2);
+        reopened.save_with_backup().unwrap();
+        let cleared = TrophySession::open(dir.path()).unwrap();
+        assert_eq!(cleared.set.obtained_count(), 0);
+    }
+
+    #[test]
+    fn copy_from_platinum_precondition_failure_rolls_back_every_trophy() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("TROPCONF.SFM"), xml(Format::Rpcs3)).unwrap();
+        fs::write(dir.path().join("TROPUSR.DAT"), fake_rpcs3_dat()).unwrap();
+        let mut session = TrophySession::open(dir.path()).unwrap();
+        let before_usr = session.raw_usr.clone();
+        let before_earned = session.set.trophies.iter()
+            .map(|t| (t.obtained, t.earned_us)).collect::<Vec<_>>();
+        assert!(session.apply_copy_from(&[
+            (0, Some(1_700_000_101_000_000)),
+            (1, None),
+        ]).is_err());
+        assert_eq!(session.raw_usr, before_usr);
+        assert_eq!(session.set.trophies.iter()
+            .map(|t| (t.obtained, t.earned_us)).collect::<Vec<_>>(), before_earned);
+        assert!(session.apply_copy_from(&[(1, None), (1, None)]).is_err());
+        assert_eq!(session.raw_usr, before_usr);
     }
 
     #[test]
