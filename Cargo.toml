@@ -21,3 +21,6 @@ rfd = { version = "0.15", optional = true }
 [[bin]]
 name = "ps3trophyisgood"
 path = "src/main.rs"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
