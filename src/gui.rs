@@ -243,6 +243,31 @@ impl TrophyApp {
         cx.notify();
     }
 
+    fn select_resign_profile(&mut self, cx: &mut Context<Self>) {
+        let Some(session) = self.session.as_mut() else {
+            self.status = "Open a native PlayStation 3 trophy folder first.".into();
+            cx.notify();
+            return;
+        };
+        let Some(path) = rfd::FileDialog::new()
+            .set_title("Select account profile SFO for PS3 re-signing")
+            .add_filter("PlayStation 3 PARAM.SFO", &["sfo", "SFO"])
+            .pick_file()
+        else {
+            return;
+        };
+        match session.select_profile_for_resign(&path) {
+            Ok(()) => {
+                self.dirty = true;
+                self.status = format!("PS3 profile selected: {}. Click Save to re-sign.", path.display());
+            }
+            Err(error) => {
+                self.status = format!("Cannot re-sign with that profile: {error:#}");
+            }
+        }
+        cx.notify();
+    }
+
     fn save(&mut self, cx: &mut Context<Self>) {
         let result = self.session.as_ref()
             .map(|session| (session.source.clone(), session.save_with_backup()));
@@ -410,6 +435,8 @@ impl Render for TrophyApp {
                         .on_click(cx.listener(|this, _, _, cx| this.instant_platinum(cx))))
                     .child(toolbar_button("Clear Unsynced", false)
                         .on_click(cx.listener(|this, _, _, cx| this.clear_unsynced(cx))))
+                    .child(toolbar_button("Resign Profile", false)
+                        .on_click(cx.listener(|this, _, _, cx| this.select_resign_profile(cx))))
                     .child(toolbar_button("Save", false)
                         .on_click(cx.listener(|this, _, _, cx| this.save(cx))))
                     .child(toolbar_button("Refresh", false)
