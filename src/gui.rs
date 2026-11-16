@@ -62,6 +62,7 @@ pub struct TrophyApp {
     copy_url_input: gpui::Entity<EditableTextState>,
     smart_options_input: gpui::Entity<EditableTextState>,
     smart_copy_enabled: bool,
+    copy_overwrite_synced: bool,
     is_copying: bool,
     tool_panel: ToolPanel,
     menu: Menu,
@@ -94,6 +95,7 @@ impl TrophyApp {
             copy_url_input,
             smart_options_input,
             smart_copy_enabled: false,
+            copy_overwrite_synced: false,
             is_copying: false,
             tool_panel: ToolPanel::None,
             menu: Menu::None,
@@ -140,6 +142,7 @@ impl TrophyApp {
                 let format = session.set.format.label();
                 self.selected_id = None;
                 self.dirty = false;
+                self.copy_overwrite_synced = false;
                 self.icons.clear();
                 self.game_icon = std::fs::read(path.join("ICON0.PNG")).ok().map(|bytes|
                     Arc::new(gpui::Image::from_bytes(gpui::ImageFormat::Png, bytes)));
@@ -178,6 +181,7 @@ impl TrophyApp {
             self.visible.clear();
             self.selected_id = None;
             self.dirty = false;
+            self.copy_overwrite_synced = false;
             self.status = "No trophy folder is open. Drag one into this window or click Open Folder.".into();
         }
         cx.notify();
@@ -364,6 +368,11 @@ impl TrophyApp {
         cx.notify();
     }
 
+    fn toggle_copy_overwrite_synced(&mut self, cx: &mut Context<Self>) {
+        self.copy_overwrite_synced = !self.copy_overwrite_synced;
+        cx.notify();
+    }
+
     fn import_copy_from(&mut self, cx: &mut Context<Self>) {
         let Some(session) = self.session.as_ref() else {
             self.status = "Open a PS3 trophy folder before importing Copy From.".into();
@@ -407,6 +416,21 @@ impl TrophyApp {
                 }
             }
         } else { None };
+        let reset_synced = self.copy_overwrite_synced;
+        if reset_synced {
+            use rfd::{MessageButtons, MessageDialog, MessageDialogResult};
+            if MessageDialog::new()
+                .set_title("Copy From: replace PSN-synced trophies")
+                .set_description(
+                    "Original-compatible mode removes synchronization flags from matched \
+                     trophies and replaces their earned times. This changes saved PS3 sync records. \
+                     Continue? A backup will be made when you save.")
+                .set_buttons(MessageButtons::YesNo)
+                .show() != MessageDialogResult::Yes
+            {
+                return;
+            }
+        }
         let folder = session.source.clone();
         let local = session.set.trophies.clone();
         self.is_copying = true;
@@ -426,11 +450,10 @@ impl TrophyApp {
                 if let Some(opts) = options {
                     smart_copy(&mut mapping, opts)?;
                 }
-                let skipped_synced = mapping.iter().filter(|(id, timestamp)|
-                    local.iter().find(|t| t.id == *id)
-                        .is_some_and(|t| t.synced && t.earned_us != *timestamp)
+                let synced_matched = mapping.iter().filter(|(id, _)|
+                    local.iter().any(|t| t.id == *id && t.synced)
                 ).count();
-                Ok::<_, anyhow::Error>((source, count, mapping, skipped_synced))
+                Ok::<_, anyhow::Error>((source, count, mapping, synced_matched))
             }).await;
             this.update(cx, |view, cx| {
                 view.is_copying = false;
@@ -447,15 +470,16 @@ impl TrophyApp {
                     Err(error) => {
                         view.status = format!("Copy From failed without modifying trophies: {error:#}");
                     }
-                    Ok((source, remote_count, mapping, skipped_synced)) => {
+                    Ok((source, remote_count, mapping, synced_matched)) => {
                         let matched = mapping.len();
                         if let Some(session) = view.session.as_mut() {
-                            match session.apply_copy_from(&mapping) {
+                            match session.apply_copy_from_with_options(&mapping, reset_synced) {
                                 Ok(changed) => {
                                     view.dirty |= changed > 0;
                                     view.status = format!(
-                                        "{}: {} rows, {} matched, {} edited, {} synced entries preserved. Save to commit.",
-                                        source.label(), remote_count, matched, changed, skipped_synced);
+                                        "{}: {} rows, {} matched, {} edited; {} synced entries {}. Save to commit.",
+                                        source.label(), remote_count, matched, changed,
+                                        synced_matched, if reset_synced { "reset" } else { "preserved" });
                                     view.rebuild();
                                 }
                                 Err(error) => view.status = format!(
@@ -835,7 +859,17 @@ impl Render for TrophyApp {
                             .border_1().border_color(rgb(0x455268))
                             .bg(rgb(BG)).text_color(rgb(TEXT)))
                         .child(div().text_xs().text_color(rgb(MUTED))
-                            .child("依獎盃名稱與類型對應；已同步獎盃不覆寫。")))
+                            .child("依獎盃名稱與類型對應，拒絕不明確的配對。")))
+                    .child(div().flex().items_center().gap_2()
+                        .child(toolbar_button(if self.copy_overwrite_synced {
+                            "覆寫已同步：開"
+                        } else {
+                            "保留已同步：開"
+                        }, self.copy_overwrite_synced)
+                            .on_click(cx.listener(|this, _, _, cx|
+                                this.toggle_copy_overwrite_synced(cx))))
+                        .child(div().text_xs().text_color(rgb(MUTED))
+                            .child("啟用覆寫後會清除匹配獎盃的同步狀態（原版行為），匯入前再次確認。")))
             ))
             // A single-line status bar, like the original utility.
             .child(
