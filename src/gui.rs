@@ -5,6 +5,8 @@ use gpui::{
 };
 use gpui_platform::application;
 use ps3trophyisgood::{SortKey, TrophySession, format_timestamp};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 const BG: u32 = 0x0f1117;
 const SURFACE: u32 = 0x1a1e29;
@@ -22,6 +24,7 @@ enum Filter {
 
 pub struct TrophyApp {
     session: Option<TrophySession>,
+    icons: HashMap<u32, Arc<gpui::Image>>,
     visible: Vec<usize>,
     selected_id: Option<u32>,
     sort: SortKey,
@@ -34,6 +37,7 @@ impl TrophyApp {
     fn new() -> Self {
         let mut app = Self {
             session: None,
+            icons: HashMap::new(),
             visible: Vec::new(),
             selected_id: None,
             sort: SortKey::Id,
@@ -53,6 +57,16 @@ impl TrophyApp {
                 let total = session.set.trophies.len();
                 let format = session.set.format.label();
                 self.selected_id = None;
+                self.icons.clear();
+                // Cache each PNG once, keyed by the real trophy ID rather than
+                // the row position (which changes when sorting or filtering).
+                for trophy in &session.set.trophies {
+                    let icon_path = path.join(format!("TROP{:03}.PNG", trophy.id));
+                    if let Ok(bytes) = std::fs::read(&icon_path) {
+                        self.icons.insert(trophy.id, Arc::new(
+                            gpui::Image::from_bytes(gpui::ImageFormat::Png, bytes)));
+                    }
+                }
                 self.status = format!("{format} | {total} trophies | {} | {}",
                     session.set.npcommid, path.display());
                 self.session = Some(session);
@@ -224,6 +238,7 @@ impl Render for TrophyApp {
             .bg(rgb(SURFACE))
             .text_sm()
             .text_color(rgb(MUTED))
+            .child(div().w(px(40.)).child(""))
             .child(div().w(px(55.)).child("ID"))
             .child(div().id("sort-name").w(px(280.)).cursor_pointer().text_color(rgb(if sort_name { ACCENT } else { MUTED }))
                 .child("Trophy Name")
@@ -300,6 +315,7 @@ impl Render for TrophyApp {
                                             .and_then(|s| s.set.trophies.get(ix)).cloned() else { continue };
                                         let id = trophy.id;
                                         let selected = this.selected_id == Some(id);
+                                        let icon = this.icons.get(&id).cloned();
                                         let row = div().id(("trophy", id))
                                             .h(px(43.)).w_full()
                                             .px_3().flex().items_center().gap_2()
@@ -307,6 +323,9 @@ impl Render for TrophyApp {
                                             .border_b_1().border_color(rgb(0x242a34))
                                             .text_sm()
                                             .cursor_pointer()
+                                            .child(div().w(px(40.)).h(px(36.))
+                                                .when_some(icon, |d, image|
+                                                    d.child(gpui::img(image).w(px(32.)).h(px(32.)))))
                                             .child(div().w(px(55.)).text_color(rgb(MUTED)).child(format!("#{id:03}")))
                                             .child(div().w(px(280.)).overflow_hidden().child(trophy.name))
                                             .child(div().w(px(105.)).child(trophy.grade.label()))
