@@ -307,7 +307,7 @@ impl Render for TrophyApp {
                             .overflow_hidden()
                             .border_1().border_color(rgb(0x30394a))
                             .child(
-                                uniform_list("trophy-rows", count, cx.processor(|this, range, _window, cx| {
+                                uniform_list("trophy-rows", count, cx.processor(|this, range: std::ops::Range<usize>, _window, cx| {
                                     let mut elements = Vec::with_capacity(range.len());
                                     for index in range {
                                         let Some(&ix) = this.visible.get(index) else { continue };
