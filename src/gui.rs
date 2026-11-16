@@ -618,6 +618,11 @@ impl Render for TrophyApp {
                     .child(div().min_w_0().flex().items_center().gap_3()
                         .child(div().w(px(46.)).h(px(46.))
                             .rounded_md().bg(rgb(0x29384a))
+                            .when(self.game_icon.is_none(), |d|
+                                d.flex().items_center().justify_center()
+                                    .text_sm().text_color(rgb(ACCENT))
+                                    .font_weight(gpui::FontWeight::SEMIBOLD)
+                                    .child("PS3"))
                             .when_some(self.game_icon.clone(), |d, image|
                                 d.child(gpui::img(image).w(px(46.)).h(px(46.)))))
                         .child(div().min_w_0().flex().flex_col().gap_1()
@@ -692,7 +697,7 @@ impl Render for TrophyApp {
                                 div().min_w(px(1200.)).w_full().h_full()
                                     .flex().flex_col()
                                     .child(header)
-                                    .child(
+                                    .when(count > 0, |table| table.child(
                                 uniform_list("trophy-rows", count, cx.processor(|this, range: std::ops::Range<usize>, _window, cx| {
                                     let mut elements = Vec::with_capacity(range.len());
                                     for index in range {
@@ -747,6 +752,22 @@ impl Render for TrophyApp {
                                     elements
                                 }))
                                 .h_full()
+                                    ))
+                                    .when(count == 0, |table| table.child(
+                                        div().flex_1().flex().items_center().justify_center()
+                                            .child(div().flex().flex_col().items_center().gap_3()
+                                                .child(div().text_lg().text_color(rgb(TEXT))
+                                                    .child(if self.session.is_some() {
+                                                        "No trophies match this filter"
+                                                    } else {
+                                                        "Open a PlayStation 3 trophy folder"
+                                                    }))
+                                                .child(div().text_sm().text_color(rgb(MUTED))
+                                                    .child(if self.session.is_some() {
+                                                        "Switch to All to show the complete trophy list."
+                                                    } else {
+                                                        "Drag a folder here or use Open Folder above."
+                                                    }))))
                                     )
                             )
                     )
