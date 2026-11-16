@@ -40,8 +40,9 @@ fn main() -> Result<()> {
                 .timestamp_micros();
             let mut session = TrophySession::open(&folder)?;
             session.unlock_at_utc(id, micros)?;
-            let backup = session.save_rpcs3_with_backup()?;
-            println!("Saved RPCS3 trophy #{id}. Original DAT backed up at {}", backup.display());
+            let format = session.set.format.label();
+            let backup = session.save_with_backup()?;
+            println!("Saved {format} trophy #{id}. Originals backed up at {}", backup.display());
             Ok(())
         }
         Some("lock") => {
@@ -50,16 +51,53 @@ fn main() -> Result<()> {
                 .to_string_lossy().parse().context("invalid trophy ID")?;
             let mut session = TrophySession::open(&folder)?;
             session.lock(id)?;
-            let backup = session.save_rpcs3_with_backup()?;
-            println!("Locked RPCS3 trophy #{id}. Original DAT backed up at {}", backup.display());
+            let format = session.set.format.label();
+            let backup = session.save_with_backup()?;
+            println!("Locked {format} trophy #{id}. Originals backed up at {}", backup.display());
+            Ok(())
+        }
+        Some("instant-platinum") => {
+            let folder = PathBuf::from(args.next().context("expected trophy folder")?);
+            let parse = |value: std::ffi::OsString| -> Result<i64> {
+                Ok(chrono::DateTime::parse_from_rfc3339(&value.to_string_lossy())
+                    .context("expected RFC3339 UTC timestamp")?.timestamp_micros())
+            };
+            let start = args.next().map(parse).transpose()?
+                .unwrap_or(1_199_145_600_000_000);
+            let end = args.next().map(parse).transpose()?
+                .unwrap_or_else(|| chrono::Utc::now().timestamp_micros());
+            let mut session = TrophySession::open(folder)?;
+            let count = session.instant_platinum(start, end)?;
+            if count > 0 {
+                let backup = session.save_with_backup()?;
+                println!("Unlocked {count} trophies. Originals backed up at {}", backup.display());
+            } else {
+                println!("No locked trophies to change.");
+            }
+            Ok(())
+        }
+        Some("clear") => {
+            let folder = PathBuf::from(args.next().context("expected trophy folder")?);
+            let mut session = TrophySession::open(folder)?;
+            let count = session.clear_unsynced_tail()?;
+            if count > 0 {
+                let backup = session.save_with_backup()?;
+                println!("Cleared {count} unsynchronized trophies. Originals backed up at {}", backup.display());
+            } else {
+                println!("No unsynchronized trophies after the last PSN sync.");
+            }
             Ok(())
         }
         Some("--help") | Some("-h") => {
-            println!("PS3TrophyIsGood Rust — GPU trophy viewer\n\
-                      Usage:\n  ps3trophyisgood [<folder>]  open graphical viewer\n\
-                      ps3trophyisgood inspect <folder>  inspect DAT and SFM on CLI\n\
-                      ps3trophyisgood unlock <folder> <id> <UTC RFC3339>\n\
-                      ps3trophyisgood lock <folder> <id>");
+            println!("PS3TrophyIsGood Rust — native PlayStation 3 trophy editor
+Usage:
+  ps3trophyisgood [<folder>]  open GPU desktop editor
+  ps3trophyisgood inspect <folder>  inspect PS3/RPCS3 DAT and SFM
+  ps3trophyisgood unlock <folder> <id> <UTC RFC3339>
+  ps3trophyisgood set-time <folder> <id> <UTC RFC3339>
+  ps3trophyisgood lock <folder> <id>
+  ps3trophyisgood instant-platinum <folder> [<start RFC3339>] [<end RFC3339>]
+  ps3trophyisgood clear <folder>  clear unsynced trophy timeline tail");
             Ok(())
         }
         _ => {
