@@ -99,9 +99,32 @@ impl Trans {
         Ok(Self {raw, entries, type3, type4, record_stride, capacity})
     }
 
+    // Preserve the original TROPTRNS event ordering when timestamps are
+    // identical. Original TROPHYParser.PopTrophy removes events backwards
+    // from the transaction list, not every unlock newer than a time cutoff.
+    fn event_order_key(&self, trophy: &Trophy) -> (i64, u32, u32) {
+        let original_index = self.entries.get(&trophy.id)
+            .and_then(|entry| be32(&entry.data, 0).ok())
+            .unwrap_or(u32::MAX);
+        (trophy.earned_us.unwrap_or(0), original_index, trophy.id)
+    }
+
+    pub(crate) fn unsynced_tail_ids(&self, trophies: &[Trophy]) -> Vec<u32> {
+        let mut earned: Vec<_> = trophies.iter().filter(|t| t.obtained).collect();
+        earned.sort_by_key(|t| self.event_order_key(t));
+        let mut result = Vec::new();
+        for trophy in earned.into_iter().rev() {
+            if trophy.synced {
+                break;
+            }
+            result.push(trophy.id);
+        }
+        result
+    }
+
     pub(crate) fn rebuild(&mut self, trophies: &[Trophy]) -> Result<&[u8]> {
         let mut got: Vec<_> = trophies.iter().filter(|t| t.obtained).collect();
-        got.sort_by_key(|t| (t.earned_us.unwrap_or(0), t.id));
+        got.sort_by_key(|t| self.event_order_key(t));
         ensure!(got.len() <= self.capacity, "not enough TROPTRNS slots for unlocked trophies");
 
         for (ix, trophy) in got.iter().enumerate() {
@@ -238,6 +261,30 @@ mod tests {
         assert!(last[2].obtained);
         assert_eq!(be32(&rebuilt_again, type3 + 16 + 16 + 4).unwrap(), 2);
         assert_eq!(be32(&rebuilt_again, type3 + 16 + 16 + 8).unwrap(), 1);
+    }
+
+    #[test]
+    fn clear_tail_preserves_unsynced_events_before_sync_with_equal_timestamps() {
+        let mut init = vec![
+            trophy(0, Grade::Bronze), trophy(1, Grade::Silver),
+            trophy(2, Grade::Gold),
+        ];
+        let mut tr = Trans::load(empty_native_trns(3), &mut init).unwrap();
+        for trophy in &mut init {
+            trophy.obtained = true;
+            trophy.earned_us = Some(1_700_000_000_000_000);
+        }
+        init[1].synced = true;
+        let serialized = tr.rebuild(&init).unwrap().to_vec();
+        let mut reopened = vec![
+            trophy(0, Grade::Bronze), trophy(1, Grade::Silver),
+            trophy(2, Grade::Gold),
+        ];
+        let parsed = Trans::load(serialized, &mut reopened).unwrap();
+        assert!(reopened[1].synced);
+        // Original PopTrophy stops when it reaches trophy #1, even though
+        // trophy #0 has the exact same timestamp as the synced entry.
+        assert_eq!(parsed.unsynced_tail_ids(&reopened), vec![2]);
     }
 
     #[test]

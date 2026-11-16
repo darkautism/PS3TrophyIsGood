@@ -438,21 +438,29 @@ impl TrophySession {
     /// stopping at the most recent synchronized entry. Synchronized trophies
     /// and older entries are not silently discarded.
     pub fn clear_unsynced_tail(&mut self) -> Result<usize> {
-        let last_synced = self.set.trophies.iter()
-            .filter(|t| t.synced)
-            .filter_map(|t| t.earned_us).max();
-        let mut candidates: Vec<(bool, i64, u32)> = self.set.trophies.iter()
-            .filter(|t| t.obtained && !t.synced)
-            .filter(|t| last_synced.is_none_or(|cutoff| t.earned_us.is_some_and(|t| t >= cutoff)))
-            .map(|t| (t.grade == Grade::Platinum, t.earned_us.unwrap_or(0), t.id))
-            .collect();
-        // Remove platinum first when clearing the full set so its prerequisite
-        // rules cannot prevent removing previously obtained base-game trophies.
-        candidates.sort_by_key(|&(plat, time, id)| (!plat, std::cmp::Reverse(time), id));
+        let mut candidates: Vec<u32> = if let Some(trans) = &self.transactions {
+            // Original TROPHYParser.PopTrophy removes from the chronological
+            // transaction log until it encounters a synchronized entry.
+            trans.unsynced_tail_ids(&self.set.trophies)
+        } else {
+            let mut timeline: Vec<_> = self.set.trophies.iter()
+                .filter(|t| t.obtained).collect();
+            timeline.sort_by_key(|t| (t.earned_us.unwrap_or(0), t.id));
+            timeline.into_iter().rev().take_while(|t| !t.synced)
+                .map(|t| t.id).collect()
+        };
+        // All targets were taken from the unsynced log tail. Lock Platinum
+        // before any base-game prerequisite, preserving the original
+        // guard while removing the identical set of entries.
+        candidates.sort_by_key(|&id| (
+            self.set.trophies.iter().find(|t| t.id == id)
+                .is_none_or(|t| t.grade != Grade::Platinum),
+            id,
+        ));
         let before_usr = self.raw_usr.clone();
         let before_trophies = self.set.trophies.clone();
         let result = (|| {
-            for &(_, _, id) in &candidates {
+            for &id in &candidates {
                 self.lock(id)?;
             }
             Ok(candidates.len())
