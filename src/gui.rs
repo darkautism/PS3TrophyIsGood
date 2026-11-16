@@ -176,8 +176,13 @@ impl TrophyApp {
             let ordering = match self.sort {
                 SortKey::Id => first.id.cmp(&second.id),
                 SortKey::Name => first.name.to_lowercase().cmp(&second.name.to_lowercase()),
+                SortKey::Description => first.description.to_lowercase().cmp(&second.description.to_lowercase()),
                 SortKey::Grade => grade_rank(first.grade).cmp(&grade_rank(second.grade)),
+                SortKey::Hidden => first.hidden.cmp(&second.hidden),
+                SortKey::Obtained => first.obtained.cmp(&second.obtained),
+                SortKey::Synced => first.synced.cmp(&second.synced),
                 SortKey::EarnedTime => first.earned_us.cmp(&second.earned_us),
+                SortKey::Group => first.group_id.cmp(&second.group_id),
             };
             let ordering = if self.descending { ordering.reverse() } else { ordering };
             ordering.then_with(|| first.id.cmp(&second.id))
@@ -519,9 +524,15 @@ impl Render for TrophyApp {
                 }
             }));
 
+        let sort_id = self.sort == SortKey::Id;
         let sort_name = self.sort == SortKey::Name;
+        let sort_description = self.sort == SortKey::Description;
         let sort_grade = self.sort == SortKey::Grade;
+        let sort_hidden = self.sort == SortKey::Hidden;
+        let sort_obtained = self.sort == SortKey::Obtained;
+        let sort_synced = self.sort == SortKey::Synced;
         let sort_date = self.sort == SortKey::EarnedTime;
+        let sort_group = self.sort == SortKey::Group;
         let header = div()
             .w_full()
             .flex()
@@ -533,21 +544,33 @@ impl Render for TrophyApp {
             .text_sm()
             .text_color(rgb(MUTED))
             .child(div().w(px(48.)).child(""))
-            .child(div().w(px(45.)).child("ID"))
+
+            .child(div().id("sort-id").w(px(45.)).cursor_pointer().text_color(rgb(if sort_id { ACCENT } else { MUTED }))
+                .child("ID").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Id, cx))))
             .child(div().id("sort-name").w(px(190.)).cursor_pointer().text_color(rgb(if sort_name { ACCENT } else { MUTED }))
                 .child("Trophy Name")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Name, cx))))
-            .child(div().w(px(280.)).child("Description"))
+
+            .child(div().id("sort-description").w(px(280.)).cursor_pointer().text_color(rgb(if sort_description { ACCENT } else { MUTED }))
+                .child("Description").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Description, cx))))
             .child(div().id("sort-grade").w(px(78.)).cursor_pointer().text_color(rgb(if sort_grade { ACCENT } else { MUTED }))
                 .child("Type")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Grade, cx))))
-            .child(div().w(px(58.)).child("Hidden"))
-            .child(div().w(px(55.)).child("Get"))
-            .child(div().w(px(62.)).child("IsSync"))
+
+            .child(div().id("sort-hidden").w(px(58.)).cursor_pointer().text_color(rgb(if sort_hidden { ACCENT } else { MUTED }))
+                .child("Hidden").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Hidden, cx))))
+
+            .child(div().id("sort-obtained").w(px(55.)).cursor_pointer().text_color(rgb(if sort_obtained { ACCENT } else { MUTED }))
+                .child("Get").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Obtained, cx))))
+
+            .child(div().id("sort-synced").w(px(62.)).cursor_pointer().text_color(rgb(if sort_synced { ACCENT } else { MUTED }))
+                .child("IsSync").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Synced, cx))))
             .child(div().id("sort-date").w(px(190.)).cursor_pointer().text_color(rgb(if sort_date { ACCENT } else { MUTED }))
                 .child("Obtainment Time")
                 .on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::EarnedTime, cx))))
-            .child(div().w(px(72.)).child("From"));
+
+            .child(div().id("sort-group").w(px(72.)).cursor_pointer().text_color(rgb(if sort_group { ACCENT } else { MUTED }))
+                .child("From").on_click(cx.listener(|this, _, _, cx| this.set_sort(SortKey::Group, cx))));
 
         div()
             .id("trophy-app-root")
