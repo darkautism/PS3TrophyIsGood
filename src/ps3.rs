@@ -108,6 +108,28 @@ impl Ps3Working {
                 "pfdtool did not produce {file}");
         }
 
+        // Compilation alone cannot establish that the output is a valid PS3 save.
+        // Have pfdtool verify the re-signed PFD, then perform a second, isolated
+        // decrypt pass on the actual ciphertext. Never decrypt the files we are
+        // about to install: pfdtool can update PARAM.PFD as a side effect.
+        run_tool(&self.tool, &self.trophy_folder, "-c", None)
+            .context("verify re-signed PS3 PARAM.PFD")?;
+        let verify_stage = tempfile::tempdir().context("create PS3 verification directory")?;
+        let verify_folder = verify_stage.path().join("Trophy");
+        fs::create_dir(&verify_folder)?;
+        for file in ["PARAM.PFD", "PARAM.SFO", "TROPTRNS.DAT", "TROPUSR.DAT"] {
+            let input = self.trophy_folder.join(file);
+            if input.is_file() {
+                fs::copy(input, verify_folder.join(file))?;
+            }
+        }
+        run_tool(&self.tool, &verify_folder, "-d", Some("TROPTRNS.DAT"))
+            .context("verify PS3 encrypted trophy log is decryptable")?;
+        ensure!(fs::read(verify_folder.join("TROPTRNS.DAT"))? == raw_trns,
+            "pfdtool round-trip changed TROPTRNS.DAT; refusing PS3 write-back");
+        ensure!(fs::read(verify_folder.join("TROPUSR.DAT"))? == raw_usr,
+            "PS3 TROPUSR.DAT changed during encryption; refusing write-back");
+
         let mut prepared = Vec::new();
         for file in ["PARAM.PFD", "TROPTRNS.DAT", "TROPUSR.DAT"] {
             prepared.push((file, fs::read(self.trophy_folder.join(file))?));
