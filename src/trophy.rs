@@ -199,7 +199,7 @@ fn be_u64(data: &[u8], at: usize) -> Result<u64> {
     Ok(u64::from_be_bytes(bytes))
 }
 
-fn read_dat(raw: &[u8], set: &mut TrophySet) -> Result<Vec<usize>> {
+pub(crate) fn read_dat(raw: &[u8], set: &mut TrophySet) -> Result<Vec<usize>> {
     ensure!(raw.len() >= 48, "TROPUSR.DAT header is truncated");
     ensure!(u64::from_le_bytes(raw[..8].try_into()?) == MAGIC, "TROPUSR.DAT is encrypted or has an unsupported magic");
     let types = be_u32(raw, 8)? as usize;
@@ -525,7 +525,8 @@ impl TrophySession {
             let raw_trans = trans.rebuild(&self.set.trophies)?;
             let mut raw_usr = self.raw_usr.clone();
             refresh_ps3_usr_metadata(&mut raw_usr, &self.set.trophies)?;
-            return working.save(&self.source, &self.original_usr, &raw_usr, raw_trans);
+            return working.save(&self.source, &self.original_usr, &raw_usr, raw_trans,
+                &self.set.trophies);
         }
         let original = self.source.join("TROPUSR.DAT");
         let current = fs::read(&original).context("re-read original DAT")?;

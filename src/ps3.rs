@@ -119,6 +119,7 @@ impl Ps3Working {
 
     pub(crate) fn save(
         &self, source: &Path, original_usr: &[u8], raw_usr: &[u8], raw_trns: &[u8],
+        expected: &[crate::trophy::Trophy],
     ) -> Result<PathBuf> {
         ensure!(fs::read(source.join("TROPUSR.DAT"))? == original_usr,
             "PS3 trophy files changed since opening; reopen first");
@@ -158,6 +159,30 @@ impl Ps3Working {
             "pfdtool round-trip changed TROPTRNS.DAT; refusing PS3 write-back");
         ensure!(fs::read(verify_folder.join("TROPUSR.DAT"))? == raw_usr,
             "PS3 TROPUSR.DAT changed during encryption; refusing write-back");
+
+        // Re-parse the *actual* verified output with the same native PS3
+        // readers used when opening the application, before overwriting a
+        // single source file. This detects stale IDs, sync metadata and
+        // accidental timestamp/record changes that a hash check cannot.
+        let sfm = fs::read(self.trophy_folder.join("TROPCONF.SFM"))?;
+        let mut reopened = crate::trophy::parse_tropconf(&sfm)
+            .context("parse written PS3 TROPCONF.SFM")?;
+        crate::trophy::read_dat(
+            &fs::read(verify_folder.join("TROPUSR.DAT"))?, &mut reopened,
+        ).context("re-read written PS3 TROPUSR.DAT")?;
+        let _verified_transactions = crate::trans::Trans::load(
+            fs::read(verify_folder.join("TROPTRNS.DAT"))?, &mut reopened.trophies,
+        ).context("re-read written PS3 TROPTRNS.DAT")?;
+        ensure!(reopened.trophies.len() == expected.len(),
+            "PS3 trophy count changed after re-encryption");
+        for (actual, intended) in reopened.trophies.iter().zip(expected) {
+            ensure!(actual.id == intended.id &&
+                    actual.obtained == intended.obtained &&
+                    actual.synced == intended.synced &&
+                    actual.earned_us == intended.earned_us,
+                "reopened PS3 trophy #{} differs from intended obtainment or sync state",
+                intended.id);
+        }
 
         let mut prepared = Vec::new();
         for file in ["PARAM.PFD", "TROPTRNS.DAT", "TROPUSR.DAT"] {
