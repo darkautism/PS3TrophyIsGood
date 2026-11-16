@@ -686,6 +686,85 @@ mod tests {
         assert_eq!(set.trophies[1].earned_us, Some(1_700_000_000_000_000));
     }
 
+    /// Synthetic retail TROPUSR with the original record-table layout:
+    /// account-independent types 3, 4, 5, 6 and 7 and physical block headers.
+    /// This fixture exercises native PS3 metadata writes (unlike RPCS3).
+    fn fake_native_ps3_usr() -> Vec<u8> {
+        let kinds = [3u32, 4, 5, 6, 7];
+        let mut out = vec![0_u8; 48 + kinds.len() * 32];
+        out[..8].copy_from_slice(&MAGIC.to_le_bytes());
+        out[8..12].copy_from_slice(&(kinds.len() as u32).to_be_bytes());
+        for (ix, kind) in kinds.iter().copied().enumerate() {
+            let offset = out.len();
+            let size = match kind {
+                3 => 96,
+                4 => 80,
+                5 => 208,
+                6 => 96,
+                7 => 80,
+                _ => unreachable!(),
+            };
+            let blocks = if kind == 4 || kind == 6 { 2 } else { 1 };
+            let table_at = 48 + ix * 32;
+            out[table_at..table_at + 4].copy_from_slice(&kind.to_be_bytes());
+            out[table_at + 4..table_at + 8].copy_from_slice(&(blocks as u32).to_be_bytes());
+            out[table_at + 16..table_at + 24].copy_from_slice(&(offset as u64).to_be_bytes());
+            for seq in 0..blocks {
+                out.extend_from_slice(&kind.to_be_bytes());
+                out.extend_from_slice(&(size as u32).to_be_bytes());
+                out.extend_from_slice(&(seq as u32).to_be_bytes());
+                out.extend_from_slice(&0u32.to_be_bytes());
+                let mut payload = vec![0u8; size];
+                if kind == 4 {
+                    payload[..4].copy_from_slice(&(seq as u32).to_be_bytes());
+                    payload[4..8].copy_from_slice(&(if seq == 0 { 1u32 } else { 4u32 }).to_be_bytes());
+                }
+                if kind == 6 {
+                    payload[..4].copy_from_slice(&(seq as u32).to_be_bytes());
+                }
+                out.extend(payload);
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn native_ps3_metadata_bitmaps_and_counts_match_original_record_layout() {
+        let mut data = fake_native_ps3_usr();
+        let mut set = parse_tropconf(&xml(Format::Ps3)).unwrap();
+        let offsets = read_dat(&data, &mut set).unwrap();
+        assert_eq!(offsets.len(), 2);
+        assert_eq!(set.format, Format::Ps3);
+        set.trophies[1].obtained = true;
+        set.trophies[1].earned_us = Some(1_700_000_100_000_000);
+        set.trophies[1].synced = false;
+        let bytes = (EPOCH_DELTA_US + 1_700_000_100_000_000) as u64;
+        data[offsets[1] + 7] = 1;
+        data[offsets[1] + 8..offsets[1] + 12].copy_from_slice(&0x0010_0000u32.to_le_bytes());
+        data[offsets[1] + 16..offsets[1] + 24].copy_from_slice(&bytes.to_be_bytes());
+        data[offsets[1] + 24..offsets[1] + 32].copy_from_slice(&bytes.to_be_bytes());
+        refresh_ps3_usr_metadata(&mut data, &set.trophies).unwrap();
+        let mut reparsed = parse_tropconf(&xml(Format::Ps3)).unwrap();
+        read_dat(&data, &mut reparsed).unwrap();
+        assert!(!reparsed.trophies[0].obtained);
+        assert!(reparsed.trophies[1].obtained);
+        assert!(!reparsed.trophies[1].synced);
+        assert_eq!(reparsed.trophies[1].earned_us, Some(1_700_000_100_000_000));
+
+        let mut table = std::collections::HashMap::new();
+        for ix in 0..5 {
+            table.insert(be_u32(&data, 48 + ix * 32).unwrap(),
+                be_u64(&data, 48 + ix * 32 + 16).unwrap() as usize);
+        }
+        let type3 = table[&3];
+        let type5 = table[&5];
+        let type7 = table[&7];
+        assert_eq!(be_u32(&data, type5 + 16 + 112).unwrap(), 1);
+        assert_eq!(be_u32(&data, type7 + 16).unwrap(), 1);
+        assert_eq!(u32::from_le_bytes(data[type3 + 16 + 64..type3 + 16 + 68].try_into().unwrap()), 2);
+        assert_eq!(be_u32(&data, type5 + 16 + 128).unwrap(), 2);
+    }
+
     #[test]
     fn rpc3_trophy_edit_is_backed_up_and_reloads() {
         let dir = tempfile::tempdir().unwrap();
