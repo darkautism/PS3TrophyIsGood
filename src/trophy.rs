@@ -259,6 +259,102 @@ impl TrophySession {
     pub fn raw_usr_len(&self) -> usize {
         self.raw_usr.len()
     }
+
+    fn change_state(&mut self, id: u32, earned_us: Option<i64>) -> Result<()> {
+        let index = usize::try_from(id)?;
+        let trophy = self.set.trophies.get(index).context("unknown trophy ID")?;
+        ensure!(trophy.id == id, "trophy ID and state index disagree");
+        ensure!(!trophy.synced, "PSN-synced trophies cannot be edited");
+
+        if let Some(micros) = earned_us {
+            // The first PlayStation trophies were introduced in 2008.
+            ensure!(micros >= 1_199_145_600_000_000, "date is earlier than 2008-01-01 UTC");
+            ensure!(DateTime::<Utc>::from_timestamp_micros(micros).is_some(), "invalid date");
+            let last_synced = self.set.trophies.iter()
+                .filter(|t| t.synced)
+                .filter_map(|t| t.earned_us)
+                .max();
+            if let Some(last) = last_synced {
+                ensure!(micros >= last, "date predates the last PSN-synced trophy");
+            }
+            if trophy.grade == Grade::Platinum && !trophy.obtained {
+                ensure!(self.set.trophies.iter()
+                    .filter(|t| t.group_id == trophy.group_id && t.id != id)
+                    .all(|t| t.obtained),
+                    "unlock the other base-game trophies before Platinum");
+            }
+        } else if trophy.grade != Grade::Platinum && trophy.obtained {
+            ensure!(!self.set.trophies.iter().any(|t|
+                t.grade == Grade::Platinum && t.group_id == trophy.group_id && t.obtained),
+                "lock the Platinum trophy before other base-game trophies");
+        }
+
+        let offset = *self.state_offsets.get(index).context("missing binary state offset")?;
+        ensure!(offset + 32 <= self.raw_usr.len(), "state offset beyond DAT boundary");
+        let converted = earned_us.map(|microseconds|
+            microseconds.checked_add(EPOCH_DELTA_US).context("date overflow")
+                .and_then(|v| u64::try_from(v).map_err(Into::into)))
+            .transpose()?
+            .unwrap_or(0);
+        let bytes = converted.to_be_bytes();
+        self.raw_usr[offset + 7] = if earned_us.is_some() { 1 } else { 0 };
+        // Preserve the PS3TrophyIsGood unsynced flag, never mark a trophy PSN-synced.
+        let state: u32 = if earned_us.is_some() { 0x0010_0000 } else { 0 };
+        self.raw_usr[offset + 8..offset + 12].copy_from_slice(&state.to_le_bytes());
+        self.raw_usr[offset + 16..offset + 24].copy_from_slice(&bytes);
+        self.raw_usr[offset + 24..offset + 32].copy_from_slice(&bytes);
+
+        let trophy = &mut self.set.trophies[index];
+        trophy.obtained = earned_us.is_some();
+        trophy.earned_us = earned_us;
+        Ok(())
+    }
+
+    pub fn unlock_at_utc(&mut self, id: u32, micros: i64) -> Result<()> {
+        self.change_state(id, Some(micros))
+    }
+
+    pub fn lock(&mut self, id: u32) -> Result<()> {
+        self.change_state(id, None)
+    }
+
+    /// Save only RPCS3 DAT files for now; retail PS3 must be decrypted,
+    /// re-encrypted and PFD-resigned together. A refusal is safer than
+    /// pretending to implement signing without actual fixtures.
+    pub fn save_rpcs3_with_backup(&self) -> Result<PathBuf> {
+        ensure!(self.set.format == Format::Rpcs3,
+            "retail PS3 requires PFD re-signing; refusing an unsigned DAT write");
+        let original = self.source.join("TROPUSR.DAT");
+        let current = fs::read(&original).context("re-read original DAT")?;
+        ensure!(current.len() == self.raw_usr.len(),
+            "original DAT changed on disk; reopen before saving");
+
+        // Compare outside the intentionally changed state bytes: open the
+        // original for a fresh full structural check before replacement.
+        let reread = TrophySession::open(&self.source)?;
+        ensure!(reread.set.npcommid == self.set.npcommid &&
+                reread.set.trophies.len() == self.set.trophies.len(),
+                "the source trophy set changed; refuse saving");
+
+        let mut temp = tempfile::NamedTempFile::new_in(&self.source)
+            .context("create temporary DAT in trophy directory")?;
+        use std::io::Write;
+        temp.write_all(&self.raw_usr).context("write staged trophy DAT")?;
+        temp.as_file_mut().sync_all().context("sync staged DAT")?;
+
+        // Re-read staged file with the production validator before replacement.
+        let mut check = self.set.clone();
+        let _ = read_dat(&self.raw_usr, &mut check)?;
+
+        let backup_name = format!("TROPUSR.DAT.bak-{}-{}",
+            Utc::now().timestamp_millis(), std::process::id());
+        let backup = self.source.join(backup_name);
+        fs::copy(&original, &backup).context("create backup before writing")?;
+        temp.persist(&original).map_err(|error| anyhow::anyhow!(
+            "could not replace DAT, original should remain intact: {error}"
+        ))?;
+        Ok(backup)
+    }
 }
 
 #[cfg(test)]
