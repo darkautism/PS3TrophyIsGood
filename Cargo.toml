@@ -13,6 +13,7 @@ gui = ["dep:gpui", "dep:gpui_platform", "dep:rfd"]
 anyhow = "1.0"
 chrono = { version = "0.4", default-features = true }
 roxmltree = "0.20"
+rand = "0.8"
 tempfile = "3.15"
 gpui = { package = "gpui-ce", version = "=0.3.0", optional = true }
 gpui_platform = { package = "gpui_ce_platform", version = "=0.3.0", features = ["font-kit", "wayland", "x11"], optional = true }
