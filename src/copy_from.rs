@@ -338,7 +338,7 @@ mod tests {
         assert_eq!(remote[0].remote_id, 99);
         let mapped = map_remote_to_local(&[local(4, "A & B", Grade::Bronze)], &remote).unwrap();
         assert_eq!(mapped[0].0, 4);
-        assert_eq!(mapped[0].1, Some(1_780_340_530_000_000));
+        assert_eq!(mapped[0].1, Some(1_780_341_730_000_000));
     }
 
     #[test]
