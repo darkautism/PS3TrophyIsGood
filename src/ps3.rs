@@ -97,6 +97,26 @@ impl Ps3Working {
         &self.trophy_folder
     }
 
+    /// Copy the original WinForms "profiles/*.sfo" account identifier into
+    /// the working PARAM.SFO. The modified SFO is re-signed with PARAM.PFD
+    /// and written alongside the DATs during the normal save operation.
+    pub(crate) fn select_profile(&mut self, profile: &Path) -> Result<()> {
+        let bytes = fs::read(profile)
+            .with_context(|| format!("read profile {}", profile.display()))?;
+        ensure!(bytes.len() >= 16, "profile SFO header is truncated");
+        let index = u32::from_le_bytes(bytes[12..16].try_into()?) as usize;
+        let id = bytes.get(index..index.saturating_add(16))
+            .filter(|bytes| bytes.len() == 16)
+            .context("SFO profile ID offset does not contain 16 bytes")?;
+
+        let target = self.trophy_folder.join("PARAM.SFO");
+        let mut sfo = fs::read(&target).context("read native PARAM.SFO")?;
+        ensure!(sfo.len() >= 0x284, "native PARAM.SFO cannot hold an account ID");
+        sfo[0x274..0x284].copy_from_slice(id);
+        fs::write(target, sfo).context("update temporary PARAM.SFO profile")?;
+        Ok(())
+    }
+
     pub(crate) fn save(
         &self, source: &Path, original_usr: &[u8], raw_usr: &[u8], raw_trns: &[u8],
     ) -> Result<PathBuf> {
@@ -104,6 +124,7 @@ impl Ps3Working {
             "PS3 trophy files changed since opening; reopen first");
         let original_pfd = fs::read(source.join("PARAM.PFD"))?;
         let original_trns = fs::read(source.join("TROPTRNS.DAT"))?;
+        let original_sfo = fs::read(source.join("PARAM.SFO"))?;
 
         fs::write(self.trophy_folder.join("TROPUSR.DAT"), raw_usr)?;
         fs::write(self.trophy_folder.join("TROPTRNS.DAT"), raw_trns)?;
@@ -142,13 +163,19 @@ impl Ps3Working {
         for file in ["PARAM.PFD", "TROPTRNS.DAT", "TROPUSR.DAT"] {
             prepared.push((file, fs::read(self.trophy_folder.join(file))?));
         }
+        let staged_sfo = fs::read(self.trophy_folder.join("PARAM.SFO"))?;
+        if staged_sfo != original_sfo {
+            prepared.push(("PARAM.SFO", staged_sfo));
+        }
         ensure!(fs::read(source.join("PARAM.PFD"))? == original_pfd
-                && fs::read(source.join("TROPTRNS.DAT"))? == original_trns,
+                && fs::read(source.join("TROPTRNS.DAT"))? == original_trns
+                && fs::read(source.join("PARAM.SFO"))? == original_sfo,
             "PS3 signed trophy files changed during editing");
 
         // Back up original files before replacing any output.
-        let backup = source.join(format!("ps3trophyisgood-backup-{}",
-            chrono::Utc::now().format("%Y%m%d-%H%M%S")));
+        let backup = source.join(format!("ps3trophyisgood-backup-{}-{}",
+            chrono::Utc::now().format("%Y%m%d-%H%M%S-%3f"),
+            std::process::id()));
         fs::create_dir(&backup).context("create PS3 save backup directory")?;
         for (name, _) in &prepared {
             fs::copy(source.join(name), backup.join(name))
