@@ -514,10 +514,10 @@ mod tests {
         assert!(detect_copy_source("https://example.com/trophies/foo", None).is_err());
         assert!(detect_copy_source("http://psnprofiles.com/trophies/1", None).is_err());
         assert_eq!(detect_copy_source("saved.html", Some(
-            "<tr class='trophyvalue2'><td>abc</td></tr>"
+            "<table><tr class='trophyvalue2'><td>abc</td></tr></table>"
         )).unwrap(), CopySource::PsnTrophyLeaders);
         assert_eq!(detect_copy_source("saved.html", Some(
-            "<tr><td><a href='/trophy/10-game/2-name'>Title</a></td></tr>"
+            "<table><tr><td><a href='/trophy/10-game/2-name'>Title</a></td></tr></table>"
         )).unwrap(), CopySource::PsnProfiles);
     }
 
