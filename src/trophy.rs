@@ -74,8 +74,13 @@ impl Grade {
 pub enum SortKey {
     Id,
     Name,
+    Description,
     Grade,
+    Hidden,
+    Obtained,
+    Synced,
     EarnedTime,
+    Group,
 }
 
 #[derive(Debug, Clone)]
