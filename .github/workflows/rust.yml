@@ -1,0 +1,46 @@
+name: Rust / GPUI
+
+on:
+  push:
+    branches: [ rust ]
+  pull_request:
+    paths:
+      - 'Cargo.toml'
+      - 'src/**'
+      - '.github/workflows/rust.yml'
+  workflow_dispatch:
+
+jobs:
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Core format/parser tests
+        run: cargo test --no-default-features
+
+  gpu-gui:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux native GUI dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-composite0-dev libxcb-image0-dev libxcb-xinput-dev \
+            libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev libfontconfig1-dev \
+            libasound2-dev libssl-dev libvulkan-dev libegl1-mesa-dev libgtk-3-dev
+      - name: Compile GPU UI
+        run: cargo check --features gui --bin ps3trophyisgood
