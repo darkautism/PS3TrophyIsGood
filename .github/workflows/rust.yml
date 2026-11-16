@@ -56,6 +56,12 @@ jobs:
           ref: 223f5360a6433f1afcaeab404790ba40000189e7
           path: external-pfdtool
           sparse-checkout: pfdtool
+      - name: Fetch original PS3 pfdtool config and Windows runtime (all platforms)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: legacy-pfdtool
+          sparse-checkout: PS3TrophyIsGood/pfdtool
       - name: Build and bundle native PS3 pfdtool (macOS/Linux)
         if: runner.os != 'Windows'
         shell: bash
@@ -63,17 +69,13 @@ jobs:
           make -C external-pfdtool/pfdtool/src CC=cc OPT='-O2'
           mkdir -p target/debug/pfdtool
           cp external-pfdtool/pfdtool/src/pfdtool target/debug/pfdtool/pfdtool
-          cp external-pfdtool/pfdtool/bin/*.conf target/debug/pfdtool/
+          # The bucanero sample global.conf has empty PS3 trophy keys.
+          # Reuse the original master's verified trophy settings instead.
+          cp legacy-pfdtool/PS3TrophyIsGood/pfdtool/global.conf target/debug/pfdtool/
+          cp legacy-pfdtool/PS3TrophyIsGood/pfdtool/games.conf target/debug/pfdtool/
           test -x target/debug/pfdtool/pfdtool
       # The original Windows pfdtool helper is required for native PS3
       # decryption and re-signing. Package its config files alongside the GUI.
-      - name: Fetch original PS3 pfdtool runtime (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/checkout@v4
-        with:
-          ref: master
-          path: legacy-pfdtool
-          sparse-checkout: PS3TrophyIsGood/pfdtool
       - name: Bundle native PS3 pfdtool (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
