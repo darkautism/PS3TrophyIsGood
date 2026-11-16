@@ -801,7 +801,18 @@ pub fn run() {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |_, cx| cx.new(|cx| TrophyApp::new(cx)),
+            |window, cx| {
+                let view = cx.new(|cx| TrophyApp::new(cx));
+                let weak = view.downgrade();
+                window.on_window_should_close(cx, move |_window, app| {
+                    weak.update(app, |view, cx| {
+                        let confirmed = view.confirm_unsaved();
+                        cx.notify();
+                        confirmed
+                    }).unwrap_or(true)
+                });
+                view
+            },
         ) {
             eprintln!("Could not create GPU window: {error}");
         }
