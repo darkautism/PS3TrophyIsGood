@@ -659,12 +659,14 @@ impl Render for TrophyApp {
                     .flex()
                     .flex_col()
                     .px_4()
-                    .child(header)
                     .child(
-                        div().flex_1().min_h_0()
-                            .overflow_hidden()
+                        div().flex_1().min_h_0().overflow_x_scroll()
                             .border_1().border_color(rgb(0x30394a))
                             .child(
+                                div().min_w(px(1200.)).w_full().h_full()
+                                    .flex().flex_col()
+                                    .child(header)
+                                    .child(
                                 uniform_list("trophy-rows", count, cx.processor(|this, range: std::ops::Range<usize>, _window, cx| {
                                     let mut elements = Vec::with_capacity(range.len());
                                     for index in range {
@@ -711,6 +713,7 @@ impl Render for TrophyApp {
                                     elements
                                 }))
                                 .h_full()
+                                    )
                             )
                     )
             )
@@ -741,7 +744,7 @@ impl Render for TrophyApp {
                                 .on_click(cx.listener(|this, _, _, cx| this.lock_selected(cx)))))
                 )
             })
-            .child(
+            .when(self.tool_panel == ToolPanel::Batch, |root| root.child(
                 div().w_full().px_5().py_3().bg(rgb(SURFACE))
                     .border_t_1().border_color(rgb(0x30394a))
                     .flex().items_center().gap_2()
@@ -766,8 +769,8 @@ impl Render for TrophyApp {
                         .on_click(cx.listener(|this, _, _, cx| this.clear_unsynced(cx))))
                     .child(toolbar_button("Resign Profile", false)
                         .on_click(cx.listener(|this, _, _, cx| this.select_resign_profile(cx))))
-            )
-            .child(
+            ))
+            .when(self.tool_panel == ToolPanel::CopyFrom, |root| root.child(
                 div().w_full().px_5().py_3().bg(rgb(BG))
                     .border_t_1().border_color(rgb(0x30394a))
                     .flex().items_center().gap_2().text_sm()
@@ -796,7 +799,7 @@ impl Render for TrophyApp {
                         .w(px(210.)).h(px(34.)).px_2().rounded_md()
                         .border_1().border_color(rgb(0x455268))
                         .bg(rgb(SURFACE)).text_color(rgb(TEXT)))
-            )
+            ))
             .child(
                 div()
                     .w_full().px_5().py_2()
