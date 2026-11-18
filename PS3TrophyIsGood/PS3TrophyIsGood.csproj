@@ -97,6 +97,8 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MainAPP.CopyFromIdentity.cs" />
+    <Compile Include="MainAPP.SpreadsheetImport.cs" />
+    <Compile Include="SpreadsheetReader.cs" />
     <Compile Include="MainAPP.Designer.cs">
       <DependentUpon>MainAPP.cs</DependentUpon>
     </Compile>
