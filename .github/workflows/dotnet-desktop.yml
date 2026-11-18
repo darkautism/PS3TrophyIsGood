@@ -38,6 +38,20 @@ jobs:
       env:
         Configuration: ${{ matrix.configuration }}
 
+    - name: Build identity mapping regression tests
+      run: msbuild tests/IdentityMappingRegression/IdentityMappingRegression.csproj /p:Configuration=Release /p:Platform=AnyCPU
+
+    - name: Run identity mapping regression tests
+      shell: pwsh
+      run: |
+        $appDir = "PS3TrophyIsGood/bin/Release"
+        $testExe = Join-Path $appDir "IdentityMappingRegression.exe"
+        Copy-Item "tests/IdentityMappingRegression/bin/Release/IdentityMappingRegression.exe" $testExe
+        & "./$testExe"
+        $testExitCode = $LASTEXITCODE
+        Remove-Item $testExe
+        if ($testExitCode -ne 0) { exit $testExitCode }
+
     - name: Upload files
       uses: actions/upload-artifact@v4
       with:
