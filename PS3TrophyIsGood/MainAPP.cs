@@ -61,6 +61,7 @@ namespace PS3TrophyIsGood
             toolStripComboBox2.SelectedIndex = 0;
             dateTimePicker1.CustomFormat = Properties.strings.DateFormatString;
             copyFrom = new CopyFrom();
+            InitializeSpreadsheetMenu();
         }
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
