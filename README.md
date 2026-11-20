@@ -55,6 +55,10 @@ If Cloudflare requires human verification, complete the embedded verification pr
 
 ## Change Log：
 
+	v1.3.12
+	- Add CSV trophy list export and Excel/CSV unlock-time import (thanks @Badabingsta, #69).
+	- Improve matching of renamed or localized trophies when copying from supported trophy sites (partial fix for #65, #68).
+
 	v1.3.11
 	- Add PSNProfiles as a Copy From source.
 	- Map remote trophies to local TROPCONF identities instead of relying on website trophy IDs or row positions.
